@@ -32,6 +32,10 @@ body{font-family:var(--font);background:var(--bg3);color:var(--text);font-size:1
 .sidebar{width:200px;flex-shrink:0;background:var(--bg2);border-right:0.5px solid var(--border);padding:1.25rem 0.75rem;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh;overflow-y:auto}
 .sidebar-logo{font-size:15px;font-weight:500;padding:0 8px;margin-bottom:16px;color:var(--text)}
 .sidebar-logo span{font-size:11px;font-weight:400;color:var(--text3);display:block;margin-top:1px}
+.sync-status{font-size:11px;padding:4px 8px;border-radius:var(--radius);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.sync-ok{background:var(--success-bg);color:var(--success-text)}
+.sync-err{background:var(--danger-bg);color:var(--danger-text)}
+.sync-loading{background:var(--bg3);color:var(--text3)}
 .nav-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--text2);border:none;background:none;width:100%;text-align:left;transition:background 0.1s,color 0.1s}
 .nav-item:hover{background:var(--bg3);color:var(--text)}
 .nav-item.active{background:var(--bg);color:var(--text);font-weight:500;box-shadow:0 0 0 0.5px var(--border)}
@@ -44,7 +48,14 @@ body{font-family:var(--font);background:var(--bg3);color:var(--text);font-size:1
 .g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
-@media(max-width:700px){.g4,.g3{grid-template-columns:repeat(2,minmax(0,1fr))}.g2{grid-template-columns:1fr}.sidebar{width:160px}.fg2,.fg3{grid-template-columns:1fr}}
+@media(max-width:700px){
+  .g4,.g3{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g2{grid-template-columns:1fr}
+  .sidebar{width:52px;padding:1rem 6px}
+  .sidebar-logo,.sidebar-logo span,.sync-status span,.nav-item span{display:none}
+  .nav-item{justify-content:center;padding:10px}
+  .fg2,.fg3{grid-template-columns:1fr}
+}
 .mc{background:var(--bg2);border-radius:var(--radius);padding:0.875rem 1rem;border:0.5px solid var(--border)}
 .mc-label{font-size:11px;color:var(--text2);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.04em}
 .mc-value{font-size:20px;font-weight:500}
@@ -58,7 +69,7 @@ body{font-family:var(--font);background:var(--bg3);color:var(--text);font-size:1
 .bg{background:var(--success-bg);color:var(--success-text)}
 .br{background:var(--danger-bg);color:var(--danger-text)}
 .bb{background:var(--info-bg);color:var(--info-text)}
-.tab-bar{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:1rem;gap:0;overflow-x:auto}
+.tab-bar{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:1rem;overflow-x:auto}
 .tab{padding:6px 14px;font-size:13px;cursor:pointer;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-0.5px;white-space:nowrap}
 .tab.active{color:var(--text);font-weight:500;border-bottom-color:var(--text)}
 .fl{font-size:12px;color:var(--text2);margin-bottom:3px}
@@ -89,26 +100,42 @@ tr:last-child td{border-bottom:none}
 .prog-fill{height:100%;border-radius:2px}
 .empty{text-align:center;padding:2rem;color:var(--text3);font-size:13px}
 .overflow-x{overflow-x:auto}
+.loading-overlay{position:fixed;inset:0;background:var(--bg3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:100;font-size:14px;color:var(--text2)}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-<div class="app">
+
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <span>Cargando datos...</span>
+</div>
+
+<div class="app" style="opacity:0;transition:opacity 0.3s" id="appRoot">
 <div class="sidebar">
   <div class="sidebar-logo">Finanzas<span>moneda base: USD</span></div>
-  <button class="nav-item active" onclick="nav('dashboard',this)"><i class="ti ti-layout-dashboard"></i>Tablero</button>
-  <button class="nav-item" onclick="nav('mensual',this)"><i class="ti ti-calendar-month"></i>Mes a mes</button>
-  <button class="nav-item" onclick="nav('inversiones',this)"><i class="ti ti-chart-line"></i>Inversiones</button>
-  <button class="nav-item" onclick="nav('deudas',this)"><i class="ti ti-arrows-exchange"></i>Deudas</button>
+  <div class="sync-status sync-loading" id="sync-status"><i class="ti ti-cloud"></i><span>Sincronizando...</span></div>
+  <button class="nav-item active" onclick="nav('dashboard',this)"><i class="ti ti-layout-dashboard"></i><span>Tablero</span></button>
+  <button class="nav-item" onclick="nav('mensual',this)"><i class="ti ti-calendar-month"></i><span>Mes a mes</span></button>
+  <button class="nav-item" onclick="nav('inversiones',this)"><i class="ti ti-chart-line"></i><span>Inversiones</span></button>
+  <button class="nav-item" onclick="nav('deudas',this)"><i class="ti ti-arrows-exchange"></i><span>Deudas</span></button>
   <div class="nav-sep"></div>
-  <button class="nav-item" onclick="nav('cargar-mes',this)"><i class="ti ti-plus"></i>Cargar mes</button>
-  <button class="nav-item" onclick="nav('cargar-mov',this)"><i class="ti ti-trending-up"></i>Cargar inversión</button>
-  <button class="nav-item" onclick="nav('config',this)"><i class="ti ti-settings"></i>Configuración</button>
+  <button class="nav-item" onclick="nav('cargar-mes',this)"><i class="ti ti-plus"></i><span>Cargar mes</span></button>
+  <button class="nav-item" onclick="nav('cargar-mov',this)"><i class="ti ti-trending-up"></i><span>Cargar inversión</span></button>
+  <button class="nav-item" onclick="nav('config',this)"><i class="ti ti-settings"></i><span>Configuración</span></button>
 </div>
 
 <div class="main">
 
 <div id="page-dashboard" class="page active">
-  <div class="page-header"><div class="page-title">Tablero</div><span id="dash-fecha" style="font-size:12px;color:var(--text3)"></span></div>
+  <div class="page-header">
+    <div class="page-title">Tablero</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="dash-fecha" style="font-size:12px;color:var(--text3)"></span>
+      <button class="btn-sm" onclick="syncNow()" title="Sincronizar"><i class="ti ti-refresh"></i></button>
+    </div>
+  </div>
   <div class="g4" id="dash-metrics"></div>
   <div class="g2">
     <div class="card"><div class="sec">Desglose de patrimonio</div><div id="dash-desglose"></div></div>
@@ -125,7 +152,7 @@ tr:last-child td{border-bottom:none}
   </div>
   <div id="mtab-historial">
     <div class="card overflow-x">
-      <table id="tabla-mensual" style="min-width:700px">
+      <table style="min-width:680px">
         <thead><tr>
           <th style="width:90px">Mes</th>
           <th style="text-align:right;width:90px">Ingresos</th>
@@ -157,10 +184,10 @@ tr:last-child td{border-bottom:none}
   <div id="itab-anual" style="display:none"><div class="card overflow-x"><div id="tabla-anual"></div></div></div>
   <div id="itab-movimientos" style="display:none">
     <div class="card overflow-x">
-      <table style="min-width:600px">
+      <table style="min-width:580px">
         <thead><tr>
-          <th style="width:90px">Fecha</th><th style="width:100px">Producto</th><th style="width:60px">Tipo</th>
-          <th style="text-align:right;width:80px">Cantidad</th><th style="text-align:right;width:70px">TC €/USD</th>
+          <th style="width:90px">Fecha</th><th style="width:110px">Producto</th><th style="width:65px">Tipo</th>
+          <th style="text-align:right;width:85px">Cantidad</th><th style="text-align:right;width:70px">TC €/USD</th>
           <th style="text-align:right;width:80px">Monto €</th><th style="text-align:right;width:90px">Monto USD</th><th style="width:40px"></th>
         </tr></thead>
         <tbody id="tbody-mov"></tbody>
@@ -213,7 +240,7 @@ tr:last-child td{border-bottom:none}
       <div class="frow"><label class="fl">Efectivo físico ARS</label><div class="iuwu"><input type="number" id="m-efec-ars" placeholder="0"><div class="unit">ARS</div></div></div>
     </div>
     <div style="margin-top:1.25rem;display:flex;gap:8px">
-      <button class="btn-p" onclick="guardarMes()">Guardar mes</button>
+      <button class="btn-p" onclick="guardarMes()">Guardar y sincronizar</button>
       <button class="btn" onclick="limpiarFormMes()">Limpiar</button>
     </div>
   </div>
@@ -241,7 +268,7 @@ tr:last-child td{border-bottom:none}
       <div class="frow"><label class="fl">Monto en USD (calculado)</label><div class="iuwu"><input type="number" id="mv-usd" placeholder="0"><div class="unit">USD</div></div></div>
     </div>
     <div style="margin-top:1.25rem;display:flex;gap:8px">
-      <button class="btn-p" onclick="guardarMov()">Guardar movimiento</button>
+      <button class="btn-p" onclick="guardarMov()">Guardar y sincronizar</button>
       <button class="btn" onclick="limpiarFormMov()">Limpiar</button>
     </div>
   </div>
@@ -269,7 +296,7 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="frow"><label class="fl">Nota</label><div class="iuwu"><input type="text" id="deu-nota" placeholder="Descripción opcional"></div></div>
     <div style="margin-top:1.25rem;display:flex;gap:8px">
-      <button class="btn-p" onclick="guardarDeuda()">Guardar</button>
+      <button class="btn-p" onclick="guardarDeuda()">Guardar y sincronizar</button>
       <button class="btn" onclick="nav('deudas',null)">Cancelar</button>
     </div>
   </div>
@@ -287,7 +314,7 @@ tr:last-child td{border-bottom:none}
       <div class="frow"><label class="fl">Precio BTC actual</label><div class="iuwu"><input type="number" id="cfg-btc" step="1"><div class="unit">USD</div></div></div>
       <div class="frow"><label class="fl">Valor total ETF/indexados actual</label><div class="iuwu"><input type="number" id="cfg-etf" step="1"><div class="unit">USD</div></div></div>
     </div>
-    <div style="margin-top:1rem"><button class="btn-p" onclick="guardarConfig()">Guardar configuración</button></div>
+    <div style="margin-top:1rem"><button class="btn-p" onclick="guardarConfig()">Guardar y sincronizar</button></div>
   </div>
   <div class="card">
     <div class="sec">Imagen fija mensual estimada</div>
@@ -302,14 +329,13 @@ tr:last-child td{border-bottom:none}
     <div style="margin-top:1rem"><button class="btn-p" onclick="guardarConfig()">Guardar</button></div>
   </div>
   <div class="card">
-    <div class="sec">Datos</div>
+    <div class="sec">Backup local</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn" onclick="exportarDatos()"><i class="ti ti-download"></i> Exportar backup JSON</button>
+      <button class="btn" onclick="exportarDatos()"><i class="ti ti-download"></i> Exportar JSON</button>
       <button class="btn" onclick="document.getElementById('import-file').click()"><i class="ti ti-upload"></i> Importar JSON</button>
-      <button class="btn-danger" onclick="resetearDatos()">Borrar todos los datos</button>
     </div>
     <input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)">
-    <p style="font-size:11px;color:var(--text3);margin-top:10px">Los datos se guardan en este navegador. Exportá un backup regularmente para no perderlos.</p>
+    <p style="font-size:11px;color:var(--text3);margin-top:10px">Los datos se sincronizan automáticamente con Google Sheets. El backup JSON es una copia de seguridad adicional.</p>
   </div>
 </div>
 
@@ -317,82 +343,144 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <script>
-const SK='finanzas_v2';
-let DB={meses:[],movimientos:[],deudas:[],config:{tcEur:1.08,tcArs:1050,btcPrecio:90000,etfValor:0,ingFijo:2800,gastoFijo:1300,invFija:500,tcRef:1.08}};
-let evoChartInst=null;
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyL4eRvvOwvA2T6Mki_Xl75kdTo6vOkImQxU7qA9T2jp8X73MRKa0i9vQ6bGJykvDDYyg/exec';
+const SK = 'finanzas_v2_cache';
 
-function save(){try{localStorage.setItem(SK,JSON.stringify(DB))}catch(e){alert('Error al guardar datos')}}
-function load(){try{const d=localStorage.getItem(SK);if(d)DB=JSON.parse(d)}catch(e){}}
+let DB = {meses:[], movimientos:[], deudas:[], config:{tcEur:1.08,tcArs:1050,btcPrecio:90000,etfValor:0,ingFijo:2800,gastoFijo:1300,invFija:500,tcRef:1.08}};
+let evoChartInst = null;
+let syncTimer = null;
+
+function setSyncStatus(state, msg) {
+  const el = document.getElementById('sync-status');
+  el.className = 'sync-status sync-' + state;
+  el.innerHTML = `<i class="ti ti-${state==='ok'?'cloud-check':state==='err'?'cloud-off':'cloud'}"></i><span>${msg}</span>`;
+}
+
+async function loadFromSheet() {
+  try {
+    setSyncStatus('loading', 'Cargando...');
+    const r = await fetch(SCRIPT_URL + '?t=' + Date.now());
+    const text = await r.text();
+    if (text && text !== '{}') {
+      const parsed = JSON.parse(text);
+      if (parsed && !parsed.error) {
+        DB = parsed;
+        try { localStorage.setItem(SK, text); } catch(e) {}
+      }
+    }
+    setSyncStatus('ok', 'Sincronizado');
+  } catch(e) {
+    setSyncStatus('err', 'Sin conexión');
+    const cached = localStorage.getItem(SK);
+    if (cached) { try { DB = JSON.parse(cached); } catch(e2) {} }
+  }
+}
+
+async function saveToSheet() {
+  try {
+    setSyncStatus('loading', 'Guardando...');
+    const body = JSON.stringify(DB);
+    try { localStorage.setItem(SK, body); } catch(e) {}
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: body
+    });
+    setSyncStatus('ok', 'Guardado');
+  } catch(e) {
+    setSyncStatus('err', 'Error al guardar');
+  }
+}
+
+function debouncedSave() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(saveToSheet, 500);
+}
+
+async function syncNow() {
+  await loadFromSheet();
+  renderCurrentPage();
+}
+
+function renderCurrentPage() {
+  const active = document.querySelector('.page.active');
+  if (!active) return;
+  const id = active.id.replace('page-', '');
+  if (id === 'dashboard') renderDash();
+  else if (id === 'mensual') renderMensual();
+  else if (id === 'inversiones') renderInv();
+  else if (id === 'deudas') renderDeudas();
+  else if (id === 'config') loadConfig();
+}
 
 function fmt(n,dec=0){return '$'+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:dec,maximumFractionDigits:dec})}
 function fmtE(n){return '€'+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0})}
 function pct(n){const v=Number(n||0);return(v>=0?'+':'')+v.toFixed(1)+'%'}
 function mesLabel(ym){const[y,m]=ym.split('-');const ms=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return ms[parseInt(m)-1]+' '+y}
 
-function nav(page,el){
+function nav(page, el) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
-  if(el&&el.classList&&el.classList.contains('nav-item'))el.classList.add('active');
-  if(page==='dashboard')renderDash();
-  if(page==='mensual')renderMensual();
-  if(page==='inversiones')renderInv();
-  if(page==='deudas')renderDeudas();
-  if(page==='config')loadConfig();
+  if (el && el.classList && el.classList.contains('nav-item')) el.classList.add('active');
+  if (page==='dashboard') renderDash();
+  else if (page==='mensual') renderMensual();
+  else if (page==='inversiones') renderInv();
+  else if (page==='deudas') renderDeudas();
+  else if (page==='config') loadConfig();
 }
 
-function switchTab(btn,tabId){
-  const page=btn.closest('.page');
+function switchTab(btn, tabId) {
+  const page = btn.closest('.page');
   page.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   page.querySelectorAll('[id^="mtab-"],[id^="itab-"],[id^="dtab-"]').forEach(t=>t.style.display='none');
-  const target=document.getElementById(tabId);
-  if(target)target.style.display='block';
+  const target = document.getElementById(tabId);
+  if (target) target.style.display = 'block';
 }
 
-function calcPatrimonio(){
-  const c=DB.config;
-  const ultimo=DB.meses.length?DB.meses[DB.meses.length-1]:null;
-  let saldoEur=0,saldoArs=0,efisArs=0;
-  if(ultimo){saldoEur=ultimo.saldoEur||0;saldoArs=ultimo.saldoArs||0;efisArs=ultimo.efectivoFisArs||0;}
-  const efUSD=(saldoEur*c.tcEur)+(saldoArs/c.tcArs)+(efisArs/c.tcArs);
-  const pos=calcPosiciones();
-  const btcQ=(pos.find(p=>p.producto==='BTC')||{cantidad:0}).cantidad;
-  const btcUSD=btcQ*c.btcPrecio;
-  const etfUSD=c.etfValor||0;
-  const cobrar=DB.deudas.filter(d=>d.tipo==='cobrar'&&!d.pagada).reduce((a,d)=>a+d.monto,0);
-  const pagar=DB.deudas.filter(d=>d.tipo==='pagar'&&!d.pagada).reduce((a,d)=>a+d.monto,0);
-  return{efUSD,btcUSD,etfUSD,cobrar,pagar,total:efUSD+btcUSD+etfUSD+cobrar-pagar};
+function calcPatrimonio() {
+  const c = DB.config;
+  const ultimo = DB.meses.length ? DB.meses[DB.meses.length-1] : null;
+  let saldoEur=0, saldoArs=0, efisArs=0;
+  if (ultimo) { saldoEur=ultimo.saldoEur||0; saldoArs=ultimo.saldoArs||0; efisArs=ultimo.efectivoFisArs||0; }
+  const efUSD = (saldoEur*c.tcEur) + (saldoArs/c.tcArs) + (efisArs/c.tcArs);
+  const pos = calcPosiciones();
+  const btcQ = (pos.find(p=>p.producto==='BTC')||{cantidad:0}).cantidad;
+  const btcUSD = btcQ * c.btcPrecio;
+  const etfUSD = c.etfValor || 0;
+  const cobrar = DB.deudas.filter(d=>d.tipo==='cobrar'&&!d.pagada).reduce((a,d)=>a+d.monto,0);
+  const pagar = DB.deudas.filter(d=>d.tipo==='pagar'&&!d.pagada).reduce((a,d)=>a+d.monto,0);
+  return {efUSD, btcUSD, etfUSD, cobrar, pagar, total: efUSD+btcUSD+etfUSD+cobrar-pagar};
 }
 
-function calcPosiciones(){
-  const byKey={};
-  DB.movimientos.forEach(m=>{
-    const k=m.nombre&&m.nombre!==m.producto?m.nombre:m.producto;
-    if(!byKey[k])byKey[k]={producto:m.producto,nombre:k,cantidad:0,costoTotalUSD:0,cantVendida:0,ingVentaUSD:0};
-    const p=byKey[k];
-    if(m.tipo==='compra'){p.cantidad+=m.cantidad;p.costoTotalUSD+=m.montoUSD;}
-    else{p.cantidad-=m.cantidad;p.cantVendida+=m.cantidad;p.ingVentaUSD+=m.montoUSD;}
+function calcPosiciones() {
+  const byKey = {};
+  DB.movimientos.forEach(m => {
+    const k = m.nombre && m.nombre !== m.producto ? m.nombre : m.producto;
+    if (!byKey[k]) byKey[k] = {producto:m.producto, nombre:k, cantidad:0, costoTotalUSD:0, cantVendida:0, ingVentaUSD:0};
+    const p = byKey[k];
+    if (m.tipo==='compra') { p.cantidad+=m.cantidad; p.costoTotalUSD+=m.montoUSD; }
+    else { p.cantidad-=m.cantidad; p.cantVendida+=m.cantidad; p.ingVentaUSD+=m.montoUSD; }
   });
   return Object.values(byKey);
 }
 
-function calcRentAnual(){
-  const byAnio={};
-  DB.movimientos.forEach(m=>{
-    const a=m.fecha.substring(0,4);
-    if(!byAnio[a])byAnio[a]={anio:a,compras:0,ventas:0};
-    if(m.tipo==='compra')byAnio[a].compras+=m.montoUSD;
-    else byAnio[a].ventas+=m.montoUSD;
+function calcRentAnual() {
+  const byAnio = {};
+  DB.movimientos.forEach(m => {
+    const a = m.fecha.substring(0,4);
+    if (!byAnio[a]) byAnio[a] = {anio:a, compras:0, ventas:0};
+    if (m.tipo==='compra') byAnio[a].compras += m.montoUSD;
+    else byAnio[a].ventas += m.montoUSD;
   });
   return Object.values(byAnio).sort((a,b)=>b.anio-a.anio);
 }
 
-function bar(label,ratio,val,color){
-  const w=Math.max(0,Math.min(100,Math.round((ratio||0)*100)));
-  return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px">
+function bar(label, ratio, val, color) {
+  const w = Math.max(0, Math.min(100, Math.round((ratio||0)*100)));
+  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px">
     <div style="width:80px;color:var(--text2);text-align:right;flex-shrink:0">${label}</div>
-    <div style="flex:1;height:20px;background:var(--bg2);border-radius:3px;overflow:hidden;position:relative">
+    <div style="flex:1;height:20px;background:var(--bg2);border-radius:3px;overflow:hidden">
       <div style="width:${w}%;height:100%;background:${color};border-radius:3px;display:flex;align-items:center;padding-left:6px;min-width:${w>0?'4px':'0'}">
         ${w>20?`<span style="font-size:11px;font-weight:500;color:white;white-space:nowrap">${val}</span>`:''}
       </div>
@@ -401,30 +489,30 @@ function bar(label,ratio,val,color){
   </div>`;
 }
 
-function renderDash(){
-  const p=calcPatrimonio();
-  document.getElementById('dash-fecha').textContent=new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'});
-  document.getElementById('dash-metrics').innerHTML=`
+function renderDash() {
+  const p = calcPatrimonio();
+  document.getElementById('dash-fecha').textContent = new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('dash-metrics').innerHTML = `
     <div class="mc"><div class="mc-label">Patrimonio total</div><div class="mc-value">${fmt(p.total)}</div><div class="mc-sub">valorizado hoy en USD</div></div>
     <div class="mc"><div class="mc-label">Efectivo</div><div class="mc-value">${fmt(p.efUSD)}</div><div class="mc-sub">€ + ARS convertidos</div></div>
     <div class="mc"><div class="mc-label">Inversiones</div><div class="mc-value">${fmt(p.btcUSD+p.etfUSD)}</div><div class="mc-sub">BTC + ETF</div></div>
     <div class="mc"><div class="mc-label">Deudas netas</div><div class="mc-value" style="color:var(--${p.cobrar-p.pagar>=0?'success':'danger'})">${fmt(p.cobrar-p.pagar)}</div><div class="mc-sub">a cobrar − a pagar</div></div>`;
 
-  const maxV=Math.max(p.efUSD,p.btcUSD,p.etfUSD,p.cobrar,1);
-  document.getElementById('dash-desglose').innerHTML=
-    bar('Efectivo',p.efUSD/maxV,fmt(p.efUSD),'#378ADD')+
-    bar('Bitcoin',p.btcUSD/maxV,fmt(p.btcUSD),'#1D9E75')+
-    bar('ETF',p.etfUSD/maxV,fmt(p.etfUSD),'#5DCAA5')+
-    bar('A cobrar',p.cobrar/maxV,fmt(p.cobrar),'#B5D4F4');
+  const maxV = Math.max(p.efUSD, p.btcUSD, p.etfUSD, p.cobrar, 1);
+  document.getElementById('dash-desglose').innerHTML =
+    bar('Efectivo', p.efUSD/maxV, fmt(p.efUSD), '#378ADD') +
+    bar('Bitcoin', p.btcUSD/maxV, fmt(p.btcUSD), '#1D9E75') +
+    bar('ETF', p.etfUSD/maxV, fmt(p.etfUSD), '#5DCAA5') +
+    bar('A cobrar', p.cobrar/maxV, fmt(p.cobrar), '#B5D4F4');
 
-  const ultimo=DB.meses.length?DB.meses[DB.meses.length-1]:null;
-  if(ultimo){
-    const tcE=ultimo.tcEur||1,tcA=ultimo.tcArs||1;
-    const ingUSD=(ultimo.ingEur+ultimo.ingOtros)*tcE;
-    const gasUSD=(ultimo.gastoArs/tcA)+(ultimo.gastoEur*tcE);
-    const aho=ingUSD-gasUSD;
-    const tasa=ingUSD>0?Math.round(aho/ingUSD*100):0;
-    document.getElementById('dash-ultimo-mes').innerHTML=`
+  const ultimo = DB.meses.length ? DB.meses[DB.meses.length-1] : null;
+  if (ultimo) {
+    const tcE=ultimo.tcEur||1, tcA=ultimo.tcArs||1;
+    const ingUSD = (ultimo.ingEur+ultimo.ingOtros)*tcE;
+    const gasUSD = (ultimo.gastoArs/tcA) + (ultimo.gastoEur*tcE);
+    const aho = ingUSD - gasUSD;
+    const tasa = ingUSD>0 ? Math.round(aho/ingUSD*100) : 0;
+    document.getElementById('dash-ultimo-mes').innerHTML = `
       <div style="font-size:12px;color:var(--text3);margin-bottom:8px">${mesLabel(ultimo.mes)}</div>
       <div class="row-item"><span class="rl">Ingresos</span><span class="rv" style="color:var(--success)">${fmt(ingUSD)}</span></div>
       <div class="row-item"><span class="rl">Gastos totales</span><span class="rv" style="color:var(--danger)">${fmt(gasUSD)}</span></div>
@@ -432,89 +520,89 @@ function renderDash(){
       <div style="margin-top:10px"><div style="font-size:11px;color:var(--text2)">Tasa de ahorro: ${tasa}%</div>
       <div class="prog-wrap"><div class="prog-fill" style="width:${Math.max(0,Math.min(100,tasa))}%;background:${tasa>=0?'#1D9E75':'#D85A30'}"></div></div></div>`;
   } else {
-    document.getElementById('dash-ultimo-mes').innerHTML='<div class="empty">Cargá tu primer mes para ver el resumen</div>';
+    document.getElementById('dash-ultimo-mes').innerHTML = '<div class="empty">Cargá tu primer mes para ver el resumen</div>';
   }
 
-  const sorted=[...DB.meses].sort((a,b)=>a.mes.localeCompare(b.mes));
-  const labels=sorted.map(m=>mesLabel(m.mes));
-  const vals=sorted.map(m=>Math.round(((m.saldoEur||0)*(m.tcEur||1))+((m.saldoArs||0)/(m.tcArs||1))+((m.efectivoFisArs||0)/(m.tcArs||1))));
-  const ctx=document.getElementById('evoChart').getContext('2d');
-  if(evoChartInst)evoChartInst.destroy();
-  const isDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
-  const tc=isDark?'#636366':'#888';const bc=isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)';
-  evoChartInst=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Efectivo USD',data:vals,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.07)',tension:0.35,fill:true,pointRadius:3,pointBackgroundColor:'#1D9E75'}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toLocaleString()}}},scales:{x:{grid:{color:bc},ticks:{color:tc,font:{size:10}}},y:{grid:{color:bc},ticks:{color:tc,font:{size:10},callback:v=>'$'+v.toLocaleString()}}}}});
+  const sorted = [...DB.meses].sort((a,b)=>a.mes.localeCompare(b.mes));
+  const labels = sorted.map(m=>mesLabel(m.mes));
+  const vals = sorted.map(m=>Math.round(((m.saldoEur||0)*(m.tcEur||1))+((m.saldoArs||0)/(m.tcArs||1))+((m.efectivoFisArs||0)/(m.tcArs||1))));
+  const ctx = document.getElementById('evoChart').getContext('2d');
+  if (evoChartInst) evoChartInst.destroy();
+  const isDark = window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const tc = isDark?'#636366':'#888', bc = isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)';
+  evoChartInst = new Chart(ctx, {type:'line',data:{labels,datasets:[{label:'Efectivo USD',data:vals,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.07)',tension:0.35,fill:true,pointRadius:3,pointBackgroundColor:'#1D9E75'}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toLocaleString()}}},scales:{x:{grid:{color:bc},ticks:{color:tc,font:{size:10}}},y:{grid:{color:bc},ticks:{color:tc,font:{size:10},callback:v=>'$'+v.toLocaleString()}}}}});
 }
 
-function renderMensual(){
-  const sorted=[...DB.meses].sort((a,b)=>b.mes.localeCompare(a.mes));
-  const tbody=document.getElementById('tbody-mensual');
-  if(!sorted.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px">No hay meses cargados aún</td></tr>';return;}
-  tbody.innerHTML=sorted.map(m=>{
-    const tcE=m.tcEur||1,tcA=m.tcArs||1;
+function renderMensual() {
+  const sorted = [...DB.meses].sort((a,b)=>b.mes.localeCompare(a.mes));
+  const tbody = document.getElementById('tbody-mensual');
+  if (!sorted.length) { tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px">No hay meses cargados aún</td></tr>'; return; }
+  tbody.innerHTML = sorted.map(m => {
+    const tcE=m.tcEur||1, tcA=m.tcArs||1;
     const ingUSD=(m.ingEur+m.ingOtros)*tcE;
-    const gasArsUSD=m.gastoArs/tcA,gasEurUSD=m.gastoEur*tcE;
-    const gasTotal=gasArsUSD+gasEurUSD,aho=ingUSD-gasTotal;
-    return`<tr>
+    const gasArsUSD=m.gastoArs/tcA, gasEurUSD=m.gastoEur*tcE;
+    const gasTotal=gasArsUSD+gasEurUSD, aho=ingUSD-gasTotal;
+    return `<tr>
       <td>${mesLabel(m.mes)}</td>
       <td style="text-align:right;color:var(--success)">${fmt(ingUSD)}</td>
       <td style="text-align:right;color:var(--danger)">${fmt(gasArsUSD)}</td>
       <td style="text-align:right;color:var(--danger)">${fmt(gasEurUSD)}</td>
       <td style="text-align:right;color:var(--danger)">${fmt(gasTotal)}</td>
       <td style="text-align:right;font-weight:500;color:var(--${aho>=0?'success':'danger'})">${fmt(aho)}</td>
-      <td style="text-align:right;color:var(--text2)">${(tcE).toFixed(3)}</td>
+      <td style="text-align:right;color:var(--text2)">${tcE.toFixed(3)}</td>
       <td style="text-align:right;color:var(--text2)">${Math.round(tcA)}</td>
     </tr>`;
   }).join('');
 
-  const c=DB.config;const tcE=c.tcRef||1.08;
-  const ingFijoUSD=(c.ingFijo||0)*tcE,gastoFijoUSD=(c.gastoFijo||0)*tcE,invUSD=(c.invFija||0)*tcE;
-  const ahoEst=ingFijoUSD-gastoFijoUSD-invUSD;
-  document.getElementById('imagen-fija').innerHTML=`
+  const c = DB.config, tcE = c.tcRef||1.08;
+  const ingFijoUSD=(c.ingFijo||0)*tcE, gastoFijoUSD=(c.gastoFijo||0)*tcE, invUSD=(c.invFija||0)*tcE;
+  const ahoEst = ingFijoUSD - gastoFijoUSD - invUSD;
+  document.getElementById('imagen-fija').innerHTML = `
     <div class="row-item"><span class="rl">Ingresos fijos estimados</span><span class="rv" style="color:var(--success)">${fmt(ingFijoUSD)}</span></div>
     <div class="row-item"><span class="rl">Gastos fijos estimados</span><span class="rv" style="color:var(--danger)">-${fmt(gastoFijoUSD)}</span></div>
     <div class="row-item"><span class="rl">Inversión mensual estimada</span><span class="rv" style="color:var(--info)">-${fmt(invUSD)}</span></div>
     <div class="row-item"><span class="rl" style="font-weight:500">Ahorro estimado</span><span class="rv" style="font-size:16px;color:var(--${ahoEst>=0?'success':'danger'})">${fmt(ahoEst)}</span></div>`;
 }
 
-function renderInv(){
-  const pos=calcPosiciones();const c=DB.config;
-  const totComp=DB.movimientos.filter(m=>m.tipo==='compra').reduce((a,m)=>a+m.montoUSD,0);
-  const totVenta=DB.movimientos.filter(m=>m.tipo==='venta').reduce((a,m)=>a+m.montoUSD,0);
-  const btcQ=(pos.find(p=>p.producto==='BTC')||{cantidad:0}).cantidad;
-  const valorHoy=btcQ*c.btcPrecio+(c.etfValor||0);
-  const rentPct=totComp>0?((valorHoy+totVenta-totComp)/totComp*100):0;
-  document.getElementById('inv-metrics').innerHTML=`
+function renderInv() {
+  const pos = calcPosiciones(), c = DB.config;
+  const totComp = DB.movimientos.filter(m=>m.tipo==='compra').reduce((a,m)=>a+m.montoUSD,0);
+  const totVenta = DB.movimientos.filter(m=>m.tipo==='venta').reduce((a,m)=>a+m.montoUSD,0);
+  const btcQ = (pos.find(p=>p.producto==='BTC')||{cantidad:0}).cantidad;
+  const valorHoy = btcQ*c.btcPrecio + (c.etfValor||0);
+  const rentPct = totComp>0 ? ((valorHoy+totVenta-totComp)/totComp*100) : 0;
+  document.getElementById('inv-metrics').innerHTML = `
     <div class="mc"><div class="mc-label">Total comprado (histórico)</div><div class="mc-value">${fmt(totComp)}</div></div>
     <div class="mc"><div class="mc-label">Valor actual posiciones</div><div class="mc-value">${fmt(valorHoy)}</div></div>
     <div class="mc"><div class="mc-label">Rentabilidad total</div><div class="mc-value" style="color:var(--${rentPct>=0?'success':'danger'})">${pct(rentPct)}</div><div class="mc-sub">sobre capital invertido</div></div>`;
 
-  const abiertas=pos.filter(p=>p.cantidad>0.000001);
-  if(!abiertas.length){document.getElementById('tabla-posiciones').innerHTML='<div class="empty">No hay movimientos cargados aún</div>';}
-  else{
-    let html='<table style="min-width:500px"><thead><tr><th>Activo</th><th style="text-align:right">Cantidad</th><th style="text-align:right">Costo prom.</th><th style="text-align:right">Valor hoy</th><th style="text-align:right">Rentab.</th></tr></thead><tbody>';
-    abiertas.forEach(p=>{
-      const costoUnit=p.cantidad>0?p.costoTotalUSD/p.cantidad:0;
-      let valHoy=p.producto==='BTC'?p.cantidad*c.btcPrecio:(p.producto==='ETF'?c.etfValor||0:0);
-      const rPct=p.costoTotalUSD>0?((valHoy-p.costoTotalUSD)/p.costoTotalUSD*100):0;
-      html+=`<tr><td><strong>${p.nombre}</strong></td><td style="text-align:right">${p.cantidad.toFixed(p.producto==='BTC'?6:2)}</td><td style="text-align:right">${fmt(costoUnit)}</td><td style="text-align:right">${fmt(valHoy)}</td><td style="text-align:right"><span class="badge ${rPct>=0?'bg':'br'}">${pct(rPct)}</span></td></tr>`;
+  const abiertas = pos.filter(p=>p.cantidad>0.000001);
+  if (!abiertas.length) { document.getElementById('tabla-posiciones').innerHTML='<div class="empty">No hay movimientos cargados aún</div>'; }
+  else {
+    let html = '<table style="min-width:500px"><thead><tr><th>Activo</th><th style="text-align:right">Cantidad</th><th style="text-align:right">Costo prom.</th><th style="text-align:right">Valor hoy</th><th style="text-align:right">Rentab.</th></tr></thead><tbody>';
+    abiertas.forEach(p => {
+      const costoUnit = p.cantidad>0 ? p.costoTotalUSD/p.cantidad : 0;
+      const valHoy = p.producto==='BTC' ? p.cantidad*c.btcPrecio : (p.producto==='ETF' ? c.etfValor||0 : 0);
+      const rPct = p.costoTotalUSD>0 ? ((valHoy-p.costoTotalUSD)/p.costoTotalUSD*100) : 0;
+      html += `<tr><td><strong>${p.nombre}</strong></td><td style="text-align:right">${p.cantidad.toFixed(p.producto==='BTC'?6:2)}</td><td style="text-align:right">${fmt(costoUnit)}</td><td style="text-align:right">${fmt(valHoy)}</td><td style="text-align:right"><span class="badge ${rPct>=0?'bg':'br'}">${pct(rPct)}</span></td></tr>`;
     });
-    html+='</tbody></table>';
-    document.getElementById('tabla-posiciones').innerHTML=html;
+    html += '</tbody></table>';
+    document.getElementById('tabla-posiciones').innerHTML = html;
   }
 
-  const anual=calcRentAnual();
-  let htmlA='<table><thead><tr><th>Año</th><th style="text-align:right">Compras</th><th style="text-align:right">Ventas</th><th style="text-align:right">Resultado realizado</th></tr></thead><tbody>';
-  anual.forEach(a=>{const n=a.ventas-a.compras;htmlA+=`<tr><td>${a.anio}</td><td style="text-align:right;color:var(--danger)">${fmt(a.compras)}</td><td style="text-align:right;color:var(--success)">${fmt(a.ventas)}</td><td style="text-align:right"><span class="badge ${n>=0?'bg':'br'}">${fmt(Math.abs(n))}</span></td></tr>`;});
-  if(!anual.length)htmlA+='<tr><td colspan="4" style="text-align:center;color:var(--text3)">Sin movimientos</td></tr>';
-  htmlA+='</tbody></table>';
-  document.getElementById('tabla-anual').innerHTML=htmlA;
+  const anual = calcRentAnual();
+  let htmlA = '<table><thead><tr><th>Año</th><th style="text-align:right">Compras</th><th style="text-align:right">Ventas</th><th style="text-align:right">Resultado realizado</th></tr></thead><tbody>';
+  anual.forEach(a => { const n=a.ventas-a.compras; htmlA+=`<tr><td>${a.anio}</td><td style="text-align:right;color:var(--danger)">${fmt(a.compras)}</td><td style="text-align:right;color:var(--success)">${fmt(a.ventas)}</td><td style="text-align:right"><span class="badge ${n>=0?'bg':'br'}">${fmt(Math.abs(n))}</span></td></tr>`; });
+  if (!anual.length) htmlA += '<tr><td colspan="4" style="text-align:center;color:var(--text3)">Sin movimientos</td></tr>';
+  htmlA += '</tbody></table>';
+  document.getElementById('tabla-anual').innerHTML = htmlA;
 
-  const movSort=[...DB.movimientos].sort((a,b)=>b.fecha.localeCompare(a.fecha));
-  const tbodyM=document.getElementById('tbody-mov');
-  if(!movSort.length){tbodyM.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text3)">Sin movimientos</td></tr>';return;}
-  tbodyM.innerHTML=movSort.map(m=>{
-    const idx=DB.movimientos.indexOf(m);
-    return`<tr>
+  const movSort = [...DB.movimientos].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const tbodyM = document.getElementById('tbody-mov');
+  if (!movSort.length) { tbodyM.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text3)">Sin movimientos</td></tr>'; return; }
+  tbodyM.innerHTML = movSort.map(m => {
+    const idx = DB.movimientos.indexOf(m);
+    return `<tr>
       <td>${m.fecha}</td><td>${m.nombre||m.producto}</td>
       <td><span class="badge ${m.tipo==='compra'?'bb':'bg'}">${m.tipo}</span></td>
       <td style="text-align:right">${Number(m.cantidad).toFixed(m.producto==='BTC'?6:2)}</td>
@@ -526,33 +614,39 @@ function renderInv(){
   }).join('');
 }
 
-function borrarMov(idx){if(!confirm('¿Borrar este movimiento?'))return;DB.movimientos.splice(idx,1);save();renderInv();}
+function borrarMov(idx) {
+  if (!confirm('¿Borrar este movimiento?')) return;
+  DB.movimientos.splice(idx,1);
+  debouncedSave();
+  renderInv();
+}
 
-function renderDeudas(){
-  const cobrar=DB.deudas.filter(d=>d.tipo==='cobrar'&&!d.pagada);
-  const pagar=DB.deudas.filter(d=>d.tipo==='pagar'&&!d.pagada);
-  document.getElementById('d-cobrar').textContent=fmt(cobrar.reduce((a,d)=>a+d.monto,0));
-  document.getElementById('d-debo').textContent=fmt(pagar.reduce((a,d)=>a+d.monto,0));
-  const rL=(arr,elId)=>{
-    if(!arr.length){document.getElementById(elId).innerHTML='<div class="empty">Sin registros</div>';return;}
-    document.getElementById(elId).innerHTML=arr.map(d=>`
+function renderDeudas() {
+  const cobrar = DB.deudas.filter(d=>d.tipo==='cobrar'&&!d.pagada);
+  const pagar = DB.deudas.filter(d=>d.tipo==='pagar'&&!d.pagada);
+  document.getElementById('d-cobrar').textContent = fmt(cobrar.reduce((a,d)=>a+d.monto,0));
+  document.getElementById('d-debo').textContent = fmt(pagar.reduce((a,d)=>a+d.monto,0));
+  const rL = (arr, elId) => {
+    if (!arr.length) { document.getElementById(elId).innerHTML='<div class="empty">Sin registros</div>'; return; }
+    document.getElementById(elId).innerHTML = arr.map(d => `
       <div class="row-item">
         <div><strong style="font-size:13px">${d.persona}</strong>${d.nota?`<span style="font-size:11px;color:var(--text3);margin-left:6px">${d.nota}</span>`:''}<br><span style="font-size:11px;color:var(--text3)">${d.fecha||''}</span></div>
         <div style="display:flex;align-items:center;gap:8px"><span class="rv" style="color:var(--${d.tipo==='cobrar'?'success':'danger'})">${fmt(d.monto)}</span>
         <button class="btn-sm" onclick="marcarPagada(${DB.deudas.indexOf(d)})">${d.tipo==='cobrar'?'Cobrado':'Pagado'}</button></div>
       </div>`).join('');
   };
-  rL(cobrar,'lista-cobrar');rL(pagar,'lista-debo');
+  rL(cobrar,'lista-cobrar');
+  rL(pagar,'lista-debo');
 }
 
-function marcarPagada(idx){DB.deudas[idx].pagada=true;save();renderDeudas();}
+function marcarPagada(idx) { DB.deudas[idx].pagada=true; debouncedSave(); renderDeudas(); }
 
-function guardarMes(){
-  const mes=document.getElementById('m-mes').value;
-  const tcEur=parseFloat(document.getElementById('m-tc-eur').value)||0;
-  const tcArs=parseFloat(document.getElementById('m-tc-ars').value)||0;
-  if(!mes||!tcEur||!tcArs){showAlert('alert-mes','Completá el mes y los tipos de cambio','err');return;}
-  const obj={mes,tcEur,tcArs,
+function guardarMes() {
+  const mes = document.getElementById('m-mes').value;
+  const tcEur = parseFloat(document.getElementById('m-tc-eur').value)||0;
+  const tcArs = parseFloat(document.getElementById('m-tc-ars').value)||0;
+  if (!mes||!tcEur||!tcArs) { showAlert('alert-mes','Completá el mes y los tipos de cambio','err'); return; }
+  const obj = {mes,tcEur,tcArs,
     ingEur:parseFloat(document.getElementById('m-ing-eur').value)||0,
     ingOtros:parseFloat(document.getElementById('m-ing-otros').value)||0,
     gastoArs:parseFloat(document.getElementById('m-gasto-ars').value)||0,
@@ -560,78 +654,84 @@ function guardarMes(){
     saldoEur:parseFloat(document.getElementById('m-saldo-eur').value)||0,
     saldoArs:parseFloat(document.getElementById('m-saldo-ars').value)||0,
     efectivoFisArs:parseFloat(document.getElementById('m-efec-ars').value)||0};
-  const idx=DB.meses.findIndex(m=>m.mes===mes);
-  if(idx>=0){if(!confirm('Ya existe ese mes. ¿Sobreescribir?'))return;DB.meses[idx]=obj;}
+  const idx = DB.meses.findIndex(m=>m.mes===mes);
+  if (idx>=0) { if (!confirm('Ya existe ese mes. ¿Sobreescribir?')) return; DB.meses[idx]=obj; }
   else DB.meses.push(obj);
   DB.meses.sort((a,b)=>a.mes.localeCompare(b.mes));
-  save();showAlert('alert-mes','Mes guardado correctamente','ok');limpiarFormMes();
+  debouncedSave();
+  showAlert('alert-mes','Mes guardado y sincronizando...','ok');
+  limpiarFormMes();
 }
 
-function limpiarFormMes(){['m-ing-eur','m-ing-otros','m-gasto-ars','m-gasto-eur','m-saldo-eur','m-saldo-ars','m-efec-ars'].forEach(id=>document.getElementById(id).value='');}
+function limpiarFormMes() { ['m-ing-eur','m-ing-otros','m-gasto-ars','m-gasto-eur','m-saldo-eur','m-saldo-ars','m-efec-ars'].forEach(id=>document.getElementById(id).value=''); }
 
-function calcMovUSD(){
-  const eur=parseFloat(document.getElementById('mv-eur').value)||0;
-  const tc=parseFloat(document.getElementById('mv-tc').value)||0;
-  document.getElementById('mv-usd').value=tc>0?(eur*tc).toFixed(2):'';
+function calcMovUSD() {
+  const eur = parseFloat(document.getElementById('mv-eur').value)||0;
+  const tc = parseFloat(document.getElementById('mv-tc').value)||0;
+  document.getElementById('mv-usd').value = tc>0 ? (eur*tc).toFixed(2) : '';
 }
 
-function guardarMov(){
-  const fecha=document.getElementById('mv-fecha').value;
-  const producto=document.getElementById('mv-producto').value;
-  const nombre=document.getElementById('mv-nombre').value.trim()||producto;
-  const tipo=document.getElementById('mv-tipo').value;
-  const cantidad=parseFloat(document.getElementById('mv-cantidad').value)||0;
-  const tc=parseFloat(document.getElementById('mv-tc').value)||0;
-  const montoEur=parseFloat(document.getElementById('mv-eur').value)||0;
-  const montoUSD=parseFloat(document.getElementById('mv-usd').value)||montoEur*tc;
-  if(!fecha||!cantidad||!tc||!montoEur){showAlert('alert-mov','Completá todos los campos obligatorios','err');return;}
+function guardarMov() {
+  const fecha = document.getElementById('mv-fecha').value;
+  const producto = document.getElementById('mv-producto').value;
+  const nombre = document.getElementById('mv-nombre').value.trim()||producto;
+  const tipo = document.getElementById('mv-tipo').value;
+  const cantidad = parseFloat(document.getElementById('mv-cantidad').value)||0;
+  const tc = parseFloat(document.getElementById('mv-tc').value)||0;
+  const montoEur = parseFloat(document.getElementById('mv-eur').value)||0;
+  const montoUSD = parseFloat(document.getElementById('mv-usd').value)||montoEur*tc;
+  if (!fecha||!cantidad||!tc||!montoEur) { showAlert('alert-mov','Completá todos los campos obligatorios','err'); return; }
   DB.movimientos.push({fecha,producto,nombre,tipo,cantidad,tc,montoEur,montoUSD});
   DB.movimientos.sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  save();showAlert('alert-mov','Movimiento guardado','ok');limpiarFormMov();
+  debouncedSave();
+  showAlert('alert-mov','Movimiento guardado y sincronizando...','ok');
+  limpiarFormMov();
 }
 
-function limpiarFormMov(){['mv-cantidad','mv-tc','mv-eur','mv-usd','mv-nombre'].forEach(id=>document.getElementById(id).value='');}
+function limpiarFormMov() { ['mv-cantidad','mv-tc','mv-eur','mv-usd','mv-nombre'].forEach(id=>document.getElementById(id).value=''); }
 
-function importarCSV(){
-  const raw=document.getElementById('mv-csv').value.trim();
-  if(!raw)return;
-  let ok=0,err=0;
-  raw.split('\n').forEach(line=>{
-    const p=line.split(',').map(s=>s.trim());
-    if(p.length<6){err++;return;}
-    const[fecha,producto,cantidad,tc,montoEur,montoUSD,tipo='compra']=p;
-    if(!fecha||!producto||!cantidad)return err++;
+function importarCSV() {
+  const raw = document.getElementById('mv-csv').value.trim();
+  if (!raw) return;
+  let ok=0, err=0;
+  raw.split('\n').forEach(line => {
+    const p = line.split(',').map(s=>s.trim());
+    if (p.length<6) { err++; return; }
+    const [fecha,producto,cantidad,tc,montoEur,montoUSD,tipo='compra'] = p;
+    if (!fecha||!producto||!cantidad) { err++; return; }
     DB.movimientos.push({fecha,producto,nombre:producto,tipo,cantidad:parseFloat(cantidad),tc:parseFloat(tc),montoEur:parseFloat(montoEur),montoUSD:parseFloat(montoUSD)});
     ok++;
   });
   DB.movimientos.sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  save();showAlert('alert-mov',`${ok} movimientos importados${err?' · '+err+' con error':''}`,err&&!ok?'err':'ok');
+  debouncedSave();
+  showAlert('alert-mov',`${ok} movimientos importados${err?' · '+err+' con error':''}`,err&&!ok?'err':'ok');
   document.getElementById('mv-csv').value='';
 }
 
-function guardarDeuda(){
-  const persona=document.getElementById('deu-persona').value.trim();
-  const monto=parseFloat(document.getElementById('deu-monto').value)||0;
-  if(!persona||!monto){showAlert('alert-deuda','Completá persona y monto','err');return;}
+function guardarDeuda() {
+  const persona = document.getElementById('deu-persona').value.trim();
+  const monto = parseFloat(document.getElementById('deu-monto').value)||0;
+  if (!persona||!monto) { showAlert('alert-deuda','Completá persona y monto','err'); return; }
   DB.deudas.push({persona,fecha:document.getElementById('deu-fecha').value,tipo:document.getElementById('deu-tipo').value,monto,nota:document.getElementById('deu-nota').value.trim(),pagada:false});
-  save();showAlert('alert-deuda','Deuda registrada','ok');
+  debouncedSave();
+  showAlert('alert-deuda','Deuda registrada y sincronizando...','ok');
   ['deu-persona','deu-fecha','deu-monto','deu-nota'].forEach(id=>document.getElementById(id).value='');
 }
 
-function loadConfig(){
-  const c=DB.config;
-  document.getElementById('cfg-tc-eur').value=c.tcEur||'';
-  document.getElementById('cfg-tc-ars').value=c.tcArs||'';
-  document.getElementById('cfg-btc').value=c.btcPrecio||'';
-  document.getElementById('cfg-etf').value=c.etfValor||'';
-  document.getElementById('cfg-ing-fijo').value=c.ingFijo||'';
-  document.getElementById('cfg-gasto-fijo').value=c.gastoFijo||'';
-  document.getElementById('cfg-inv-fija').value=c.invFija||'';
-  document.getElementById('cfg-tc-ref').value=c.tcRef||'';
+function loadConfig() {
+  const c = DB.config;
+  document.getElementById('cfg-tc-eur').value = c.tcEur||'';
+  document.getElementById('cfg-tc-ars').value = c.tcArs||'';
+  document.getElementById('cfg-btc').value = c.btcPrecio||'';
+  document.getElementById('cfg-etf').value = c.etfValor||'';
+  document.getElementById('cfg-ing-fijo').value = c.ingFijo||'';
+  document.getElementById('cfg-gasto-fijo').value = c.gastoFijo||'';
+  document.getElementById('cfg-inv-fija').value = c.invFija||'';
+  document.getElementById('cfg-tc-ref').value = c.tcRef||'';
 }
 
-function guardarConfig(){
-  DB.config={
+function guardarConfig() {
+  DB.config = {
     tcEur:parseFloat(document.getElementById('cfg-tc-eur').value)||1.08,
     tcArs:parseFloat(document.getElementById('cfg-tc-ars').value)||1050,
     btcPrecio:parseFloat(document.getElementById('cfg-btc').value)||0,
@@ -641,36 +741,39 @@ function guardarConfig(){
     invFija:parseFloat(document.getElementById('cfg-inv-fija').value)||0,
     tcRef:parseFloat(document.getElementById('cfg-tc-ref').value)||1.08,
   };
-  save();alert('Configuración guardada.');
+  debouncedSave();
+  showAlert('alert-mes','Configuración guardada','ok');
 }
 
-function exportarDatos(){
-  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='finanzas_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+function exportarDatos() {
+  const blob = new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'finanzas_backup_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
 }
 
-function importarDatos(input){
-  const file=input.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=e=>{try{DB=JSON.parse(e.target.result);save();location.reload();}catch(err){alert('Error al importar. Verificá que sea un archivo JSON válido.');}};
+function importarDatos(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { try { DB=JSON.parse(e.target.result); debouncedSave(); renderDash(); alert('Datos importados y sincronizados.'); } catch(err) { alert('Error al importar.'); } };
   reader.readAsText(file);
 }
 
-function resetearDatos(){
-  if(!confirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.'))return;
-  localStorage.removeItem(SK);location.reload();
+function showAlert(id, msg, type) {
+  const el = document.getElementById(id); if (!el) return;
+  el.innerHTML = `<div class="alert alert-${type==='ok'?'ok':'err'}">${msg}</div>`;
+  setTimeout(()=>{ if(el) el.innerHTML=''; }, 4000);
 }
 
-function showAlert(id,msg,type){
-  const el=document.getElementById(id);if(!el)return;
-  el.innerHTML=`<div class="alert alert-${type==='ok'?'ok':'err'}">${msg}</div>`;
-  setTimeout(()=>{if(el)el.innerHTML=''},4000);
-}
-
-load();
-document.getElementById('mv-fecha').value=new Date().toISOString().slice(0,10);
-document.getElementById('deu-fecha').value=new Date().toISOString().slice(0,10);
-renderDash();
+(async () => {
+  document.getElementById('mv-fecha').value = new Date().toISOString().slice(0,10);
+  document.getElementById('deu-fecha').value = new Date().toISOString().slice(0,10);
+  await loadFromSheet();
+  renderDash();
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('appRoot').style.opacity = '1';
+})();
 </script>
 </body>
 </html>
