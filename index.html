@@ -162,6 +162,7 @@ tr:last-child td{border-bottom:none}
           <th style="text-align:right;width:80px">Ahorro</th>
           <th style="text-align:right;width:70px">TC €/USD</th>
           <th style="text-align:right;width:80px">TC ARS/USD</th>
+          <th style="width:140px">Comentario</th>
         </tr></thead>
         <tbody id="tbody-mensual"></tbody>
       </table>
@@ -239,10 +240,21 @@ tr:last-child td{border-bottom:none}
       <div class="frow"><label class="fl">Saldo cuenta ARS al cierre</label><div class="iuwu"><input type="number" id="m-saldo-ars" placeholder="0"><div class="unit">ARS</div></div></div>
       <div class="frow"><label class="fl">Efectivo físico ARS</label><div class="iuwu"><input type="number" id="m-efec-ars" placeholder="0"><div class="unit">ARS</div></div></div>
     </div>
+    <div class="sec" style="margin-top:1rem">Comentario</div>
+    <div class="frow"><textarea id="m-comentario" rows="2" placeholder="Nota opcional sobre este mes..."></textarea></div>
     <div style="margin-top:1.25rem;display:flex;gap:8px">
       <button class="btn-p" onclick="guardarMes()">Guardar y sincronizar</button>
       <button class="btn" onclick="limpiarFormMes()">Limpiar</button>
     </div>
+  </div>
+  <div class="card">
+    <div class="sec">Importar historial (CSV)</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:6px">Formato: <code>mes,tc_eur_usd,ing_eur,ing_otros,gasto_eur,saldo_eur,comentario</code></p>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:10px">Los campos ARS se ponen en 0 automáticamente. El comentario es opcional.</p>
+    <textarea id="m-csv" rows="6" placeholder="2023-01,1.08,2800,0,1400,5200,Primer mes registrado
+2023-02,1.08,2800,200,1300,5900
+2023-03,1.08,2800,0,1600,5100,Mes con gastos altos"></textarea>
+    <button class="btn" style="margin-top:8px" onclick="importarCSVMeses()">Importar CSV</button>
   </div>
 </div>
 
@@ -550,7 +562,8 @@ function renderMensual() {
       <td style="text-align:right;color:var(--danger)">${fmt(gasTotal)}</td>
       <td style="text-align:right;font-weight:500;color:var(--${aho>=0?'success':'danger'})">${fmt(aho)}</td>
       <td style="text-align:right;color:var(--text2)">${tcE.toFixed(3)}</td>
-      <td style="text-align:right;color:var(--text2)">${Math.round(tcA)}</td>
+      <td style="text-align:right;color:var(--text2)">${Math.round(tcA)||'—'}</td>
+      <td style="color:var(--text3);font-size:12px">${m.comentario||''}</td>
     </tr>`;
   }).join('');
 
@@ -645,7 +658,7 @@ function guardarMes() {
   const mes = document.getElementById('m-mes').value;
   const tcEur = parseFloat(document.getElementById('m-tc-eur').value)||0;
   const tcArs = parseFloat(document.getElementById('m-tc-ars').value)||0;
-  if (!mes||!tcEur||!tcArs) { showAlert('alert-mes','Completá el mes y los tipos de cambio','err'); return; }
+  if (!mes||!tcEur) { showAlert('alert-mes','Completá al menos el mes y el TC EUR/USD','err'); return; }
   const obj = {mes,tcEur,tcArs,
     ingEur:parseFloat(document.getElementById('m-ing-eur').value)||0,
     ingOtros:parseFloat(document.getElementById('m-ing-otros').value)||0,
@@ -653,7 +666,8 @@ function guardarMes() {
     gastoEur:parseFloat(document.getElementById('m-gasto-eur').value)||0,
     saldoEur:parseFloat(document.getElementById('m-saldo-eur').value)||0,
     saldoArs:parseFloat(document.getElementById('m-saldo-ars').value)||0,
-    efectivoFisArs:parseFloat(document.getElementById('m-efec-ars').value)||0};
+    efectivoFisArs:parseFloat(document.getElementById('m-efec-ars').value)||0,
+    comentario:document.getElementById('m-comentario').value.trim()};
   const idx = DB.meses.findIndex(m=>m.mes===mes);
   if (idx>=0) { if (!confirm('Ya existe ese mes. ¿Sobreescribir?')) return; DB.meses[idx]=obj; }
   else DB.meses.push(obj);
@@ -663,7 +677,36 @@ function guardarMes() {
   limpiarFormMes();
 }
 
-function limpiarFormMes() { ['m-ing-eur','m-ing-otros','m-gasto-ars','m-gasto-eur','m-saldo-eur','m-saldo-ars','m-efec-ars'].forEach(id=>document.getElementById(id).value=''); }
+function limpiarFormMes() { ['m-ing-eur','m-ing-otros','m-gasto-ars','m-gasto-eur','m-saldo-eur','m-saldo-ars','m-efec-ars','m-comentario'].forEach(id=>document.getElementById(id).value=''); }
+
+function importarCSVMeses() {
+  const raw = document.getElementById('m-csv').value.trim();
+  if (!raw) return;
+  let ok=0, err=0, sobreescritos=0;
+  raw.split('\n').forEach(line => {
+    const p = line.split(',').map(s=>s.trim());
+    if (p.length < 3) { err++; return; }
+    const [mes, tc_eur, ing_eur, ing_otros='0', gasto_eur='0', saldo_eur='0', ...resto] = p;
+    if (!mes || !tc_eur) { err++; return; }
+    const comentario = resto.join(',').trim();
+    const obj = {
+      mes, tcEur:parseFloat(tc_eur)||1.08, tcArs:0,
+      ingEur:parseFloat(ing_eur)||0, ingOtros:parseFloat(ing_otros)||0,
+      gastoArs:0, gastoEur:parseFloat(gasto_eur)||0,
+      saldoEur:parseFloat(saldo_eur)||0, saldoArs:0, efectivoFisArs:0,
+      comentario
+    };
+    const idx = DB.meses.findIndex(m=>m.mes===mes);
+    if (idx>=0) { DB.meses[idx]=obj; sobreescritos++; }
+    else DB.meses.push(obj);
+    ok++;
+  });
+  DB.meses.sort((a,b)=>a.mes.localeCompare(b.mes));
+  debouncedSave();
+  const msg = `${ok} meses importados${sobreescritos?' ('+sobreescritos+' sobreescritos)':''}${err?' · '+err+' con error':''}`;
+  showAlert('alert-mes', msg, err&&!ok?'err':'ok');
+  document.getElementById('m-csv').value='';
+}
 
 function calcMovUSD() {
   const eur = parseFloat(document.getElementById('mv-eur').value)||0;
