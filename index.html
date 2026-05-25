@@ -471,8 +471,9 @@ function calcPosiciones() {
     const k = m.nombre && m.nombre !== m.producto ? m.nombre : m.producto;
     if (!byKey[k]) byKey[k] = {producto:m.producto, nombre:k, cantidad:0, costoTotalUSD:0, cantVendida:0, ingVentaUSD:0};
     const p = byKey[k];
-    if (m.tipo==='compra') { p.cantidad+=m.cantidad; p.costoTotalUSD+=m.montoUSD; }
-    else { p.cantidad-=m.cantidad; p.cantVendida+=m.cantidad; p.ingVentaUSD+=m.montoUSD; }
+    const tipo = (m.tipo||'').toLowerCase();
+    if (tipo==='compra') { p.cantidad+=Number(m.cantidad); p.costoTotalUSD+=Number(m.montoUSD); }
+    else { p.cantidad-=Number(m.cantidad); p.cantVendida+=Number(m.cantidad); p.ingVentaUSD+=Number(m.montoUSD); }
   });
   return Object.values(byKey);
 }
@@ -482,8 +483,9 @@ function calcRentAnual() {
   DB.movimientos.forEach(m => {
     const a = m.fecha.substring(0,4);
     if (!byAnio[a]) byAnio[a] = {anio:a, compras:0, ventas:0};
-    if (m.tipo==='compra') byAnio[a].compras += m.montoUSD;
-    else byAnio[a].ventas += m.montoUSD;
+    const tipo = (m.tipo||'').toLowerCase();
+    if (tipo==='compra') byAnio[a].compras += Number(m.montoUSD);
+    else byAnio[a].ventas += Number(m.montoUSD);
   });
   return Object.values(byAnio).sort((a,b)=>b.anio-a.anio);
 }
@@ -579,33 +581,56 @@ function renderMensual() {
 
 function renderInv() {
   const pos = calcPosiciones(), c = DB.config;
-  const totComp = DB.movimientos.filter(m=>m.tipo==='compra').reduce((a,m)=>a+m.montoUSD,0);
-  const totVenta = DB.movimientos.filter(m=>m.tipo==='venta').reduce((a,m)=>a+m.montoUSD,0);
-  const btcQ = (pos.find(p=>p.producto==='BTC')||{cantidad:0}).cantidad;
-  const valorHoy = btcQ*c.btcPrecio + (c.etfValor||0);
+  const totComp = DB.movimientos.filter(m=>(m.tipo||'').toLowerCase()==='compra').reduce((a,m)=>a+Number(m.montoUSD),0);
+  const totVenta = DB.movimientos.filter(m=>(m.tipo||'').toLowerCase()==='venta').reduce((a,m)=>a+Number(m.montoUSD),0);
+
+  // Valor actual: BTC abierto * precio actual + ETFs abiertos (valor en config)
+  const btcPos = pos.find(p=>p.producto==='BTC');
+  const btcQ = btcPos && btcPos.cantidad > 0.000001 ? btcPos.cantidad : 0;
+  const btcUSD = btcQ * c.btcPrecio;
+  // ETFs: sum only open positions — if all sold, etfValor contributes 0
+  const etfOpen = pos.filter(p=>p.producto!=='BTC' && p.cantidad>0.000001);
+  const etfUSD = etfOpen.length > 0 ? (c.etfValor||0) : 0;
+  const valorHoy = btcUSD + etfUSD;
+
   const rentPct = totComp>0 ? ((valorHoy+totVenta-totComp)/totComp*100) : 0;
   document.getElementById('inv-metrics').innerHTML = `
     <div class="mc"><div class="mc-label">Total comprado (histórico)</div><div class="mc-value">${fmt(totComp)}</div></div>
-    <div class="mc"><div class="mc-label">Valor actual posiciones</div><div class="mc-value">${fmt(valorHoy)}</div></div>
-    <div class="mc"><div class="mc-label">Rentabilidad total</div><div class="mc-value" style="color:var(--${rentPct>=0?'success':'danger'})">${pct(rentPct)}</div><div class="mc-sub">sobre capital invertido</div></div>`;
+    <div class="mc"><div class="mc-label">Valor actual posiciones abiertas</div><div class="mc-value">${fmt(valorHoy)}</div></div>
+    <div class="mc"><div class="mc-label">Rentabilidad total</div><div class="mc-value" style="color:var(--${rentPct>=0?'success':'danger'})">${pct(rentPct)}</div><div class="mc-sub">incluyendo realizadas</div></div>`;
 
   const abiertas = pos.filter(p=>p.cantidad>0.000001);
-  if (!abiertas.length) { document.getElementById('tabla-posiciones').innerHTML='<div class="empty">No hay movimientos cargados aún</div>'; }
-  else {
+  if (!abiertas.length) {
+    document.getElementById('tabla-posiciones').innerHTML='<div class="empty">No hay posiciones abiertas actualmente</div>';
+  } else {
     let html = '<table style="min-width:500px"><thead><tr><th>Activo</th><th style="text-align:right">Cantidad</th><th style="text-align:right">Costo prom.</th><th style="text-align:right">Valor hoy</th><th style="text-align:right">Rentab.</th></tr></thead><tbody>';
     abiertas.forEach(p => {
       const costoUnit = p.cantidad>0 ? p.costoTotalUSD/p.cantidad : 0;
-      const valHoy = p.producto==='BTC' ? p.cantidad*c.btcPrecio : (p.producto==='ETF' ? c.etfValor||0 : 0);
+      const valHoy = p.producto==='BTC' ? p.cantidad*c.btcPrecio : 0;
       const rPct = p.costoTotalUSD>0 ? ((valHoy-p.costoTotalUSD)/p.costoTotalUSD*100) : 0;
-      html += `<tr><td><strong>${p.nombre}</strong></td><td style="text-align:right">${p.cantidad.toFixed(p.producto==='BTC'?6:2)}</td><td style="text-align:right">${fmt(costoUnit)}</td><td style="text-align:right">${fmt(valHoy)}</td><td style="text-align:right"><span class="badge ${rPct>=0?'bg':'br'}">${pct(rPct)}</span></td></tr>`;
+      const dec = p.producto==='BTC' ? 6 : 2;
+      html += `<tr><td><strong>${p.nombre}</strong></td><td style="text-align:right">${Number(p.cantidad).toFixed(dec)}</td><td style="text-align:right">${fmt(costoUnit)}</td><td style="text-align:right">${fmt(valHoy)}</td><td style="text-align:right"><span class="badge ${rPct>=0?'bg':'br'}">${pct(rPct)}</span></td></tr>`;
     });
     html += '</tbody></table>';
     document.getElementById('tabla-posiciones').innerHTML = html;
   }
 
+  // Posiciones cerradas con resultado realizado
+  const cerradas = pos.filter(p=>p.cantVendida>0 && p.cantidad<=0.000001);
+  if (cerradas.length) {
+    let htmlC = '<div class="sec" style="margin-top:1rem">Posiciones cerradas</div><table style="min-width:500px"><thead><tr><th>Activo</th><th style="text-align:right">Comprado</th><th style="text-align:right">Vendido</th><th style="text-align:right">Resultado</th></tr></thead><tbody>';
+    cerradas.forEach(p => {
+      const n = p.ingVentaUSD - p.costoTotalUSD;
+      const rPct = p.costoTotalUSD>0 ? (n/p.costoTotalUSD*100) : 0;
+      htmlC += `<tr><td><strong>${p.nombre}</strong></td><td style="text-align:right">${fmt(p.costoTotalUSD)}</td><td style="text-align:right">${fmt(p.ingVentaUSD)}</td><td style="text-align:right"><span class="badge ${n>=0?'bg':'br'}">${n>=0?'+':''}${fmt(n)} (${pct(rPct)})</span></td></tr>`;
+    });
+    htmlC += '</tbody></table>';
+    document.getElementById('tabla-posiciones').innerHTML += htmlC;
+  }
+
   const anual = calcRentAnual();
   let htmlA = '<table><thead><tr><th>Año</th><th style="text-align:right">Compras</th><th style="text-align:right">Ventas</th><th style="text-align:right">Resultado realizado</th></tr></thead><tbody>';
-  anual.forEach(a => { const n=a.ventas-a.compras; htmlA+=`<tr><td>${a.anio}</td><td style="text-align:right;color:var(--danger)">${fmt(a.compras)}</td><td style="text-align:right;color:var(--success)">${fmt(a.ventas)}</td><td style="text-align:right"><span class="badge ${n>=0?'bg':'br'}">${fmt(Math.abs(n))}</span></td></tr>`; });
+  anual.forEach(a => { const n=a.ventas-a.compras; htmlA+=`<tr><td>${a.anio}</td><td style="text-align:right;color:var(--danger)">${fmt(a.compras)}</td><td style="text-align:right;color:var(--success)">${fmt(a.ventas)}</td><td style="text-align:right"><span class="badge ${n>=0?'bg':'br'}">${n>=0?'+':''}${fmt(Math.abs(n))}</span></td></tr>`; });
   if (!anual.length) htmlA += '<tr><td colspan="4" style="text-align:center;color:var(--text3)">Sin movimientos</td></tr>';
   htmlA += '</tbody></table>';
   document.getElementById('tabla-anual').innerHTML = htmlA;
@@ -615,10 +640,11 @@ function renderInv() {
   if (!movSort.length) { tbodyM.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text3)">Sin movimientos</td></tr>'; return; }
   tbodyM.innerHTML = movSort.map(m => {
     const idx = DB.movimientos.indexOf(m);
+    const esBTC = (m.producto||'').toUpperCase()==='BTC';
     return `<tr>
-      <td>${m.fecha}</td><td>${m.nombre||m.producto}</td>
-      <td><span class="badge ${m.tipo==='compra'?'bb':'bg'}">${m.tipo}</span></td>
-      <td style="text-align:right">${Number(m.cantidad).toFixed(m.producto==='BTC'?6:2)}</td>
+      <td>${m.fecha}</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis">${m.nombre||m.producto}</td>
+      <td><span class="badge ${(m.tipo||'').toLowerCase()==='compra'?'bb':'bg'}">${m.tipo}</span></td>
+      <td style="text-align:right">${Number(m.cantidad).toFixed(esBTC?6:2)}</td>
       <td style="text-align:right">${Number(m.tc).toFixed(3)}</td>
       <td style="text-align:right">${fmtE(m.montoEur)}</td>
       <td style="text-align:right">${fmt(m.montoUSD)}</td>
@@ -752,11 +778,28 @@ function importarCSV() {
   if (!raw) return;
   let ok=0, err=0;
   raw.split('\n').forEach(line => {
+    line = line.trim();
+    if (!line) return;
     const p = line.split(',').map(s=>s.trim());
     if (p.length<6) { err++; return; }
-    const [fecha,producto,cantidad,tc,montoEur,montoUSD,tipo='compra'] = p;
-    if (!fecha||!producto||!cantidad) { err++; return; }
-    DB.movimientos.push({fecha,producto,nombre:producto,tipo,cantidad:parseFloat(cantidad),tc:parseFloat(tc),montoEur:parseFloat(montoEur),montoUSD:parseFloat(montoUSD)});
+    // Format: fecha, nombre, cantidad, tc, montoEur, montoUSD, tipo
+    const fecha    = p[0];
+    const nombre   = p[1];
+    const cantidad = p[2];
+    const tc       = p[3];
+    const montoEur = p[4];
+    const montoUSD = p[5];
+    const tipo     = (p[6]||'compra').toLowerCase().trim();
+    if (!fecha||!nombre||!cantidad) { err++; return; }
+    // Detect producto from nombre
+    const producto = nombre.toUpperCase()==='BTC' ? 'BTC' : 'ETF';
+    DB.movimientos.push({
+      fecha, producto, nombre, tipo,
+      cantidad: parseFloat(cantidad),
+      tc: parseFloat(tc),
+      montoEur: parseFloat(montoEur),
+      montoUSD: parseFloat(montoUSD)
+    });
     ok++;
   });
   DB.movimientos.sort((a,b)=>a.fecha.localeCompare(b.fecha));
