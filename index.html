@@ -43,7 +43,7 @@ body{font-family:var(--font);background:var(--bg3);color:var(--text);font-size:1
 .nav-sep{height:0.5px;background:var(--border);margin:6px 0}
 .main{flex:1;padding:1.5rem;overflow-y:auto;min-width:0}
 .page{display:none}.page.active{display:block}
-.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px}
 .page-title{font-size:18px;font-weight:500}
 .g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
@@ -73,7 +73,7 @@ body{font-family:var(--font);background:var(--bg3);color:var(--text);font-size:1
 .tab.active{color:var(--text);font-weight:500;border-bottom-color:var(--text)}
 .fl{font-size:12px;color:var(--text2);margin-bottom:3px}
 .iuwu{display:flex;align-items:center;border:0.5px solid var(--border2);border-radius:var(--radius);overflow:hidden;background:var(--bg)}
-.iuwu input{border:none;flex:1;padding:7px 10px;background:transparent;color:var(--text);font-size:13px;outline:none;min-width:0;font-family:var(--font)}
+.iuwu input,.iuwu select{border:none;flex:1;padding:7px 10px;background:transparent;color:var(--text);font-size:13px;outline:none;min-width:0;font-family:var(--font)}
 .iuwu .unit{padding:7px 10px;background:var(--bg2);font-size:11px;color:var(--text2);border-left:0.5px solid var(--border);white-space:nowrap}
 .frow{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}
 .fg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -94,17 +94,43 @@ table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
 th{text-align:left;padding:6px 8px;color:var(--text2);font-weight:500;border-bottom:0.5px solid var(--border);font-size:12px}
 td{padding:8px 8px;border-bottom:0.5px solid var(--border);color:var(--text);overflow:hidden;text-overflow:ellipsis}
 tr:last-child td{border-bottom:none}
+tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
 .prog-wrap{height:4px;background:var(--bg2);border-radius:2px;overflow:hidden;margin-top:6px}
 .prog-fill{height:100%;border-radius:2px}
 .empty{text-align:center;padding:2rem;color:var(--text3);font-size:13px}
 .overflow-x{overflow-x:auto}
 .loading-overlay{position:fixed;inset:0;background:var(--bg3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:100;font-size:14px;color:var(--text2)}
 .spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin 0.7s linear infinite}
+.login-box{position:fixed;inset:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;z-index:200}
+.login-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:2rem;width:320px;text-align:center}
+.login-title{font-size:20px;font-weight:500;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:1.5rem}
+.pin-input{display:flex;gap:10px;justify-content:center;margin-bottom:1.25rem}
+.pin-input input{width:44px;height:52px;text-align:center;font-size:22px;font-weight:500;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;font-family:var(--font)}
+.pin-input input:focus{border-color:var(--info);box-shadow:0 0 0 2px var(--info-bg)}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
-<div class="loading-overlay" id="loading"><div class="spinner"></div><span>Cargando datos...</span></div>
+
+<!-- LOGIN -->
+<div class="login-box" id="loginBox">
+  <div class="login-card">
+    <div style="font-size:28px;margin-bottom:8px">🔐</div>
+    <div class="login-title">Finanzas personales</div>
+    <div class="login-sub" id="loginSub">Ingresá tu PIN de 4 dígitos</div>
+    <div class="pin-input">
+      <input type="password" maxlength="1" id="p1" inputmode="numeric" oninput="pinNext(this,'p2')">
+      <input type="password" maxlength="1" id="p2" inputmode="numeric" oninput="pinNext(this,'p3')">
+      <input type="password" maxlength="1" id="p3" inputmode="numeric" oninput="pinNext(this,'p4')">
+      <input type="password" maxlength="1" id="p4" inputmode="numeric" oninput="pinSubmit()">
+    </div>
+    <div id="loginErr" style="font-size:12px;color:var(--danger);min-height:18px"></div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Cargando datos...</span></div>
+
 <div class="app" style="opacity:0;transition:opacity 0.3s" id="appRoot">
 <div class="sidebar">
   <div class="sidebar-logo">Finanzas<span>base: USD</span></div>
@@ -136,7 +162,7 @@ tr:last-child td{border-bottom:none}
     <div class="card"><div class="sec">Desglose de patrimonio</div><div id="dash-desglose"></div></div>
     <div class="card"><div class="sec">Último mes registrado</div><div id="dash-ultimo-mes"></div></div>
   </div>
-  <div class="card"><div class="sec">Evolución liquidez (USD)</div><canvas id="evoChart" height="110"></canvas></div>
+  <div class="card"><div class="sec">Evolución patrimonial (USD)</div><canvas id="evoChart" height="110"></canvas></div>
 </div>
 
 <!-- LIQUIDEZ -->
@@ -144,14 +170,8 @@ tr:last-child td{border-bottom:none}
   <div class="page-header"><div class="page-title">Liquidez</div></div>
   <div class="g3" id="liq-metrics"></div>
   <div class="g2">
-    <div class="card">
-      <div class="sec">Cuenta €</div>
-      <div id="liq-cuenta-eur"></div>
-    </div>
-    <div class="card">
-      <div class="sec">Efectivo físico</div>
-      <div id="liq-efectivo"></div>
-    </div>
+    <div class="card"><div class="sec">Cuenta €</div><div id="liq-cuenta-eur"></div></div>
+    <div class="card"><div class="sec">Efectivo físico</div><div id="liq-efectivo"></div></div>
   </div>
 </div>
 
@@ -163,6 +183,7 @@ tr:last-child td{border-bottom:none}
     <button class="tab" onclick="switchTab(this,'mtab-fijos')">Imagen fija</button>
   </div>
   <div id="mtab-historial">
+    <p style="font-size:12px;color:var(--text3);margin-bottom:8px">Click en cualquier fila para editar ese mes.</p>
     <div class="card overflow-x">
       <table style="min-width:680px">
         <thead><tr>
@@ -192,6 +213,7 @@ tr:last-child td{border-bottom:none}
     <button class="tab active" onclick="switchTab(this,'itab-posiciones')">Posiciones</button>
     <button class="tab" onclick="switchTab(this,'itab-anual')">Rentabilidad anual</button>
     <button class="tab" onclick="switchTab(this,'itab-movimientos')">Movimientos</button>
+    <button class="tab" onclick="switchTab(this,'itab-precios')">Precios históricos</button>
   </div>
   <div id="itab-posiciones"><div class="card overflow-x"><div id="tabla-posiciones"></div></div></div>
   <div id="itab-anual" style="display:none"><div class="card overflow-x"><div id="tabla-anual"></div></div></div>
@@ -199,12 +221,28 @@ tr:last-child td{border-bottom:none}
     <div class="card overflow-x">
       <table style="min-width:580px">
         <thead><tr>
-          <th style="width:90px">Fecha</th><th style="width:160px">Producto</th><th style="width:65px">Tipo</th>
+          <th style="width:90px">Fecha</th><th style="width:160px">Activo</th><th style="width:65px">Tipo</th>
           <th style="text-align:right;width:85px">Cantidad</th><th style="text-align:right;width:70px">TC</th>
           <th style="text-align:right;width:80px">Monto €</th><th style="text-align:right;width:90px">Monto USD</th><th style="width:40px"></th>
         </tr></thead>
         <tbody id="tbody-mov"></tbody>
       </table>
+    </div>
+  </div>
+  <div id="itab-precios" style="display:none">
+    <div class="card">
+      <div class="sec">Importar precios históricos (CSV)</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:8px">Formato: <code>activo,fecha,precio_usd</code> — usá el nombre exacto del activo.</p>
+      <textarea id="precios-csv" rows="6" placeholder="BTC,2022-12-31,16547
+BTC,2023-12-31,42258
+BTC,2024-12-31,93429"></textarea>
+      <button class="btn" style="margin-top:8px" onclick="importarPrecios()">Importar precios</button>
+      <div id="alert-precios" style="margin-top:8px"></div>
+    </div>
+    <div class="card overflow-x">
+      <div class="sec">Precios cargados</div>
+      <table><thead><tr><th>Activo</th><th>Fecha</th><th style="text-align:right">Precio USD</th><th></th></tr></thead>
+      <tbody id="tbody-precios"></tbody></table>
     </div>
   </div>
 </div>
@@ -224,12 +262,12 @@ tr:last-child td{border-bottom:none}
   <div id="dtab-debo" style="display:none"><div class="card"><div id="lista-debo"></div></div></div>
 </div>
 
-<!-- CARGAR MES -->
+<!-- CARGAR / EDITAR MES -->
 <div id="page-cargar-mes" class="page">
-  <div class="page-header"><div class="page-title">Cargar mes</div></div>
+  <div class="page-header"><div class="page-title" id="form-mes-titulo">Cargar mes</div></div>
   <div id="alert-mes"></div>
   <div class="card">
-    <div class="sec">Período y tipos de cambio</div>
+    <div class="sec">Período y tipo de cambio</div>
     <div class="fg2">
       <div class="frow"><label class="fl">Mes</label><input type="month" id="m-mes"></div>
       <div></div>
@@ -241,12 +279,12 @@ tr:last-child td{border-bottom:none}
     <div class="sec" style="margin-top:1rem">Ingresos</div>
     <div class="fg2">
       <div class="frow"><label class="fl">Ingreso principal (€)</label><div class="iuwu"><input type="number" id="m-ing-eur" placeholder="0"><div class="unit">€</div></div></div>
-      <div class="frow"><label class="fl">Otros ingresos (€)</label><div class="iuwu"><input type="number" id="m-ing-otros" placeholder="0"><div class="unit">€</div></div></div>
+      <div class="frow"><label class="fl">Otros ingresos reales (€)</label><div class="iuwu"><input type="number" id="m-ing-otros" placeholder="0"><div class="unit">€</div></div></div>
     </div>
     <div class="sec" style="margin-top:1rem">Gastos del mes</div>
     <div class="fg2">
-      <div class="frow"><label class="fl">Total gastos en € (suscripciones, etc.)</label><div class="iuwu"><input type="number" id="m-gasto-eur" placeholder="0"><div class="unit">€</div></div></div>
-      <div class="frow"><label class="fl">Total gastos en ARS (vida en Argentina)</label><div class="iuwu"><input type="number" id="m-gasto-ars" placeholder="0"><div class="unit">ARS</div></div></div>
+      <div class="frow"><label class="fl">Total gastos en € </label><div class="iuwu"><input type="number" id="m-gasto-eur" placeholder="0"><div class="unit">€</div></div></div>
+      <div class="frow"><label class="fl">Total gastos en ARS</label><div class="iuwu"><input type="number" id="m-gasto-ars" placeholder="0"><div class="unit">ARS</div></div></div>
     </div>
     <div class="sec" style="margin-top:1rem">Saldo Cuenta € al cierre</div>
     <div class="fg2">
@@ -254,16 +292,16 @@ tr:last-child td{border-bottom:none}
       <div></div>
     </div>
     <div class="sec" style="margin-top:1rem">Comentario</div>
-    <div class="frow"><textarea id="m-comentario" rows="2" placeholder="Nota opcional sobre este mes..."></textarea></div>
-    <div style="margin-top:1.25rem;display:flex;gap:8px">
+    <div class="frow"><textarea id="m-comentario" rows="2" placeholder="Nota opcional..."></textarea></div>
+    <div style="margin-top:1.25rem;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn-p" onclick="guardarMes()">Guardar y sincronizar</button>
       <button class="btn" onclick="limpiarFormMes()">Limpiar</button>
+      <button class="btn btn-danger" id="btn-borrar-mes" style="display:none" onclick="borrarMes()">Borrar este mes</button>
     </div>
   </div>
   <div class="card">
     <div class="sec">Importar historial (CSV)</div>
     <p style="font-size:12px;color:var(--text2);margin-bottom:6px">Formato: <code>mes,tc_eur_usd,ing_eur,gasto_eur,saldo_eur,comentario</code></p>
-    <p style="font-size:11px;color:var(--text3);margin-bottom:10px">Gastos ARS opcionales como 7a columna. Comentario puede tener comas.</p>
     <textarea id="m-csv" rows="5" placeholder="2026-04,1.16,2386.00,661.23,2325.00,Comentario opcional"></textarea>
     <button class="btn" style="margin-top:8px" onclick="importarCSVMeses()">Importar CSV</button>
   </div>
@@ -279,8 +317,10 @@ tr:last-child td{border-bottom:none}
       <div class="frow"><label class="fl">Tipo</label><select id="mv-tipo"><option value="compra">Compra</option><option value="venta">Venta</option></select></div>
     </div>
     <div class="fg2">
-      <div class="frow"><label class="fl">Producto</label><select id="mv-producto"><option value="BTC">Bitcoin (BTC)</option><option value="ETF">ETF / Indexado</option><option value="otro">Otro</option></select></div>
-      <div class="frow"><label class="fl">Nombre específico</label><div class="iuwu"><input type="text" id="mv-nombre" placeholder="ej. iShares Developed World"></div></div>
+      <div class="frow"><label class="fl">Categoría</label>
+        <select id="mv-categoria"><option value="crypto">Crypto</option><option value="etf">ETF / Indexado</option><option value="accion">Acción</option><option value="bono">Bono</option><option value="otro">Otro</option></select>
+      </div>
+      <div class="frow"><label class="fl">Nombre del activo</label><div class="iuwu"><input type="text" id="mv-nombre" placeholder="ej. BTC, iShares SP500..."></div></div>
     </div>
     <div class="fg3">
       <div class="frow"><label class="fl">Cantidad</label><div class="iuwu"><input type="number" id="mv-cantidad" step="any"><div class="unit">unid.</div></div></div>
@@ -309,11 +349,11 @@ tr:last-child td{border-bottom:none}
   <div class="page-header"><div class="page-title">Movimiento de efectivo</div></div>
   <div id="alert-ef"></div>
   <div class="card">
-    <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Registrá entradas o salidas de billetes físicos. Estos movimientos no afectan el ahorro mensual — solo rebalancean entre bolsas.</p>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Registrá entradas o salidas de billetes físicos. No afectan el ahorro mensual.</p>
     <div class="fg2">
       <div class="frow"><label class="fl">Fecha</label><input type="date" id="ef-fecha"></div>
       <div class="frow"><label class="fl">Bolsa</label>
-        <select id="ef-bolsa">
+        <select id="ef-bolsa" onchange="document.getElementById('ef-unit').textContent=this.value==='efEur'?'€':'USD'">
           <option value="efEur">Efectivo € (billetes euros)</option>
           <option value="efUsd">Efectivo USD (billetes dólares)</option>
         </select>
@@ -330,15 +370,15 @@ tr:last-child td{border-bottom:none}
         <div class="iuwu"><input type="number" id="ef-monto" placeholder="0" step="any"><div class="unit" id="ef-unit">€</div></div>
       </div>
     </div>
-    <div class="frow"><label class="fl">Nota</label><div class="iuwu"><input type="text" id="ef-nota" placeholder="ej. Retiro de cuenta para gastos Argentina"></div></div>
+    <div class="frow"><label class="fl">Nota</label><div class="iuwu"><input type="text" id="ef-nota" placeholder="ej. Retiro de cuenta para Argentina"></div></div>
     <div style="margin-top:1.25rem;display:flex;gap:8px">
       <button class="btn-p" onclick="guardarEfectivo()">Guardar</button>
       <button class="btn" onclick="limpiarFormEf()">Limpiar</button>
     </div>
   </div>
   <div class="card">
-    <div class="sec">Historial de movimientos de efectivo</div>
-    <div class="overflow-x"><table style="min-width:500px">
+    <div class="sec">Historial</div>
+    <div class="overflow-x"><table style="min-width:480px">
       <thead><tr><th>Fecha</th><th>Bolsa</th><th>Tipo</th><th style="text-align:right">Monto</th><th>Nota</th><th></th></tr></thead>
       <tbody id="tbody-ef"></tbody>
     </table></div>
@@ -375,19 +415,15 @@ tr:last-child td{border-bottom:none}
       <div class="frow"><label class="fl">TC EUR/USD actual</label><div class="iuwu"><input type="number" id="cfg-tc-eur" step="0.001"><div class="unit">USD/€</div></div></div>
       <div class="frow"><label class="fl">TC ARS/USD actual</label><div class="iuwu"><input type="number" id="cfg-tc-ars" step="1"><div class="unit">ARS/$</div></div></div>
     </div>
-    <div class="fg2" style="margin-top:4px">
-      <div class="frow"><label class="fl">Precio BTC actual</label><div class="iuwu"><input type="number" id="cfg-btc" step="1"><div class="unit">USD</div></div></div>
-      <div class="frow"><label class="fl">Valor total ETF/indexados abiertos</label><div class="iuwu"><input type="number" id="cfg-etf" step="1"><div class="unit">USD</div></div></div>
-    </div>
     <div style="margin-top:1rem"><button class="btn-p" onclick="guardarConfig()">Guardar</button></div>
   </div>
   <div class="card">
-    <div class="sec">Saldos iniciales (para arrancar sin historial)</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Estos valores se usan como punto de partida si no hay meses cargados.</p>
+    <div class="sec">Saldos iniciales</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Se usan como punto de partida si no hay meses cargados.</p>
     <div class="fg3">
-      <div class="frow"><label class="fl">Cuenta € inicial</label><div class="iuwu"><input type="number" id="cfg-saldo-ini-eur" step="0.01"><div class="unit">€</div></div></div>
-      <div class="frow"><label class="fl">Efectivo € inicial</label><div class="iuwu"><input type="number" id="cfg-ef-ini-eur" step="0.01"><div class="unit">€</div></div></div>
-      <div class="frow"><label class="fl">Efectivo USD inicial</label><div class="iuwu"><input type="number" id="cfg-ef-ini-usd" step="0.01"><div class="unit">USD</div></div></div>
+      <div class="frow"><label class="fl">Cuenta € inicial</label><div class="iuwu"><input type="number" id="cfg-saldo-ini-eur"><div class="unit">€</div></div></div>
+      <div class="frow"><label class="fl">Efectivo € inicial</label><div class="iuwu"><input type="number" id="cfg-ef-ini-eur"><div class="unit">€</div></div></div>
+      <div class="frow"><label class="fl">Efectivo USD inicial</label><div class="iuwu"><input type="number" id="cfg-ef-ini-usd"><div class="unit">USD</div></div></div>
     </div>
     <div style="margin-top:1rem"><button class="btn-p" onclick="guardarConfig()">Guardar</button></div>
   </div>
@@ -404,6 +440,15 @@ tr:last-child td{border-bottom:none}
     <div style="margin-top:1rem"><button class="btn-p" onclick="guardarConfig()">Guardar</button></div>
   </div>
   <div class="card">
+    <div class="sec">PIN de acceso</div>
+    <div class="fg2">
+      <div class="frow"><label class="fl">Cambiar PIN (4 dígitos)</label><div class="iuwu"><input type="password" id="cfg-pin-nuevo" maxlength="4" inputmode="numeric" placeholder="••••"><div class="unit">PIN</div></div></div>
+      <div class="frow"><label class="fl">Confirmar PIN</label><div class="iuwu"><input type="password" id="cfg-pin-conf" maxlength="4" inputmode="numeric" placeholder="••••"><div class="unit">PIN</div></div></div>
+    </div>
+    <div style="margin-top:1rem"><button class="btn-p" onclick="cambiarPin()">Guardar PIN</button></div>
+    <div id="alert-pin" style="margin-top:8px"></div>
+  </div>
+  <div class="card">
     <div class="sec">Datos</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn" onclick="exportarDatos()"><i class="ti ti-download"></i> Exportar JSON</button>
@@ -411,24 +456,22 @@ tr:last-child td{border-bottom:none}
       <button class="btn-danger" onclick="resetearDatos()">Borrar todo</button>
     </div>
     <input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)">
-    <p style="font-size:11px;color:var(--text3);margin-top:10px">Datos sincronizados con Google Sheets. Exportá JSON como backup adicional.</p>
   </div>
 </div>
 
-</div><!-- main -->
-</div><!-- app -->
+</div></div>
 
 <script>
 const SCRIPT_URL='https://script.google.com/macros/s/AKfycbyL4eRvvOwvA2T6Mki_Xl75kdTo6vOkImQxU7qA9T2jp8X73MRKa0i9vQ6bGJykvDDYyg/exec';
 const SK='finanzas_v3';
 let DB={
-  meses:[],movimientos:[],efectivo:[],deudas:[],
-  config:{tcEur:1.16,tcArs:1200,btcPrecio:95000,etfValor:0,
-    saldoIniEur:0,efIniEur:0,efIniUsd:0,
-    ingFijo:2386,gastoFijo:1300,invFija:500,tcRef:1.16}
+  meses:[],movimientos:[],efectivo:[],deudas:[],precios:[],
+  config:{tcEur:1.16,tcArs:1200,saldoIniEur:0,efIniEur:0,efIniUsd:0,ingFijo:2386,gastoFijo:1300,invFija:500,tcRef:1.16},
+  pin:'1234'
 };
-let evoChartInst=null,syncTimer=null;
+let evoChartInst=null,syncTimer=null,editMes=null;
 
+// ── SYNC ────────────────────────────────────────────────
 function setSyncStatus(s,m){
   const el=document.getElementById('sync-status');
   el.className='sync-status sync-'+s;
@@ -439,12 +482,12 @@ async function loadFromSheet(){
     setSyncStatus('loading','Cargando...');
     const r=await fetch(SCRIPT_URL+'?t='+Date.now());
     const text=await r.text();
-    if(text&&text!=='{}'){const p=JSON.parse(text);if(p&&!p.error)DB=p;}
+    if(text&&text!=='{}'){const p=JSON.parse(text);if(p&&!p.error){DB=p;if(!DB.precios)DB.precios=[];if(!DB.efectivo)DB.efectivo=[];}}
     try{localStorage.setItem(SK,JSON.stringify(DB));}catch(e){}
     setSyncStatus('ok','Sincronizado');
   }catch(e){
     setSyncStatus('err','Sin conexión');
-    try{const c=localStorage.getItem(SK);if(c)DB=JSON.parse(c);}catch(e2){}
+    try{const c=localStorage.getItem(SK);if(c){DB=JSON.parse(c);if(!DB.precios)DB.precios=[];if(!DB.efectivo)DB.efectivo=[];}}catch(e2){}
   }
 }
 async function saveToSheet(){
@@ -458,6 +501,53 @@ async function saveToSheet(){
 }
 function debouncedSave(){clearTimeout(syncTimer);syncTimer=setTimeout(saveToSheet,600);}
 async function syncNow(){await loadFromSheet();renderCurrentPage();}
+
+// ── LOGIN ───────────────────────────────────────────────
+function pinNext(el,nextId){if(el.value.length===1)document.getElementById(nextId).focus();}
+function pinSubmit(){
+  const pin=[1,2,3,4].map(i=>document.getElementById('p'+i).value).join('');
+  if(pin.length<4)return;
+  if(pin===DB.pin){
+    document.getElementById('loginBox').style.display='none';
+    document.getElementById('appRoot').style.opacity='1';
+  } else {
+    document.getElementById('loginErr').textContent='PIN incorrecto';
+    [1,2,3,4].forEach(i=>{document.getElementById('p'+i).value='';});
+    document.getElementById('p1').focus();
+    setTimeout(()=>document.getElementById('loginErr').textContent='',2000);
+  }
+}
+async function initLogin(){
+  document.getElementById('loading').style.display='flex';
+  await loadFromSheet();
+  document.getElementById('loading').style.display='none';
+  document.getElementById('loginBox').style.display='flex';
+  document.getElementById('p1').focus();
+  renderDash();
+}
+function cambiarPin(){
+  const n=document.getElementById('cfg-pin-nuevo').value;
+  const c=document.getElementById('cfg-pin-conf').value;
+  if(n.length!==4||!/^\d{4}$/.test(n)){showAlert('alert-pin','El PIN debe tener exactamente 4 dígitos','err');return;}
+  if(n!==c){showAlert('alert-pin','Los PINs no coinciden','err');return;}
+  DB.pin=n;debouncedSave();showAlert('alert-pin','PIN actualizado','ok');
+  document.getElementById('cfg-pin-nuevo').value='';document.getElementById('cfg-pin-conf').value='';
+}
+
+// ── HELPERS ─────────────────────────────────────────────
+function fmt(n,d=0){return'$'+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function fmtE(n){return'€'+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function fmtM(n,cur){return(cur==='USD'?'$':'€')+Math.abs(Number(n||0)).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function pct(n,dec=1){const v=Number(n||0);return(v>=0?'+':'')+v.toFixed(dec)+'%';}
+function mesLabel(ym){const[y,m]=ym.split('-');const ms=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return ms[parseInt(m)-1]+' '+y;}
+
+function nav(page,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(el&&el.classList&&el.classList.contains('nav-item'))el.classList.add('active');
+  renderCurrentPage();
+}
 function renderCurrentPage(){
   const id=(document.querySelector('.page.active')||{}).id||'';
   const p=id.replace('page-','');
@@ -469,21 +559,6 @@ function renderCurrentPage(){
   else if(p==='cargar-ef')renderTablaEf();
   else if(p==='config')loadConfig();
 }
-
-// ── Helpers ──────────────────────────────────────────────
-function fmt(n,d=0){return'$'+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});}
-function fmtE(n){return'€'+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});}
-function fmtM(n,cur){return(cur==='USD'?'$':'€')+Math.abs(Number(n||0)).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function pct(n){const v=Number(n||0);return(v>=0?'+':'')+v.toFixed(1)+'%';}
-function mesLabel(ym){const[y,m]=ym.split('-');const ms=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return ms[parseInt(m)-1]+' '+y;}
-
-function nav(page,el){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');
-  if(el&&el.classList&&el.classList.contains('nav-item'))el.classList.add('active');
-  renderCurrentPage();
-}
 function switchTab(btn,tabId){
   const page=btn.closest('.page');
   page.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -491,31 +566,67 @@ function switchTab(btn,tabId){
   page.querySelectorAll('[id^="mtab-"],[id^="itab-"],[id^="dtab-"]').forEach(t=>t.style.display='none');
   const target=document.getElementById(tabId);
   if(target)target.style.display='block';
+  if(tabId==='itab-precios')renderTablaPrecios();
+}
+function showAlert(id,msg,type){
+  const el=document.getElementById(id);if(!el)return;
+  el.innerHTML=`<div class="alert alert-${type==='ok'?'ok':'err'}">${msg}</div>`;
+  setTimeout(()=>{if(el)el.innerHTML='';},4000);
 }
 
-// ── Cálculo de efectivo físico ───────────────────────────
-function calcEfectivo(){
-  const c=DB.config;
-  let efEur=c.efIniEur||0, efUsd=c.efIniUsd||0;
-  (DB.efectivo||[]).forEach(m=>{
-    const sign=m.tipo==='entrada'?1:-1;
-    if(m.bolsa==='efEur')efEur+=sign*Number(m.monto);
-    else efUsd+=sign*Number(m.monto);
+// ── PRECIOS HISTÓRICOS ───────────────────────────────────
+function getPrecio(nombre,fecha){
+  // Busca el precio más reciente para ese activo en o antes de la fecha dada
+  const relevant=(DB.precios||[]).filter(p=>p.activo===nombre&&p.fecha<=fecha);
+  if(!relevant.length)return null;
+  relevant.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  return relevant[0].precio;
+}
+function getPrecioMes(nombre,yearMonth){
+  // yearMonth = 'YYYY-MM', busca el cierre del último día de ese mes
+  const relevant=(DB.precios||[]).filter(p=>p.activo===nombre&&p.fecha.substring(0,7)===yearMonth);
+  if(relevant.length){relevant.sort((a,b)=>b.fecha.localeCompare(a.fecha));return relevant[0].precio;}
+  // si no hay exacto, busca el más reciente anterior
+  const anterior=(DB.precios||[]).filter(p=>p.activo===nombre&&p.fecha<yearMonth+'-01');
+  if(!anterior.length)return null;
+  anterior.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  return anterior[0].precio;
+}
+
+function importarPrecios(){
+  const raw=document.getElementById('precios-csv').value.trim();
+  if(!raw)return;
+  let ok=0,err=0;
+  raw.split('\n').forEach(line=>{
+    line=line.trim();if(!line)return;
+    const p=line.split(',').map(s=>s.trim());
+    if(p.length<3){err++;return;}
+    const[activo,fecha,precio]=p;
+    if(!activo||!fecha||!precio){err++;return;}
+    // Sobreescribir si ya existe
+    const idx=(DB.precios||[]).findIndex(x=>x.activo===activo&&x.fecha===fecha);
+    if(idx>=0)DB.precios[idx]={activo,fecha,precio:parseFloat(precio)};
+    else{if(!DB.precios)DB.precios=[];DB.precios.push({activo,fecha,precio:parseFloat(precio)});}
+    ok++;
   });
-  return{efEur,efUsd,totalUSD:efEur*c.tcEur+efUsd};
+  DB.precios.sort((a,b)=>a.activo.localeCompare(b.activo)||a.fecha.localeCompare(b.fecha));
+  debouncedSave();
+  showAlert('alert-precios',`${ok} precios importados${err?' · '+err+' errores':''}`,err&&!ok?'err':'ok');
+  document.getElementById('precios-csv').value='';
+  renderTablaPrecios();
 }
-
-// ── Cálculo de cuenta € (último mes o saldo inicial) ─────
-function calcCuentaEur(){
-  const c=DB.config;
-  if(DB.meses.length){
-    const ultimo=DB.meses[DB.meses.length-1];
-    return{saldoEur:ultimo.saldoEur||0,mes:ultimo.mes};
-  }
-  return{saldoEur:c.saldoIniEur||0,mes:'inicial'};
+function renderTablaPrecios(){
+  const tbody=document.getElementById('tbody-precios');
+  if(!DB.precios||!DB.precios.length){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text3)">Sin precios cargados</td></tr>';return;}
+  const sorted=[...DB.precios].sort((a,b)=>b.fecha.localeCompare(a.fecha)||a.activo.localeCompare(b.activo));
+  tbody.innerHTML=sorted.map((p,i)=>{
+    const idx=DB.precios.indexOf(p);
+    return`<tr><td>${p.activo}</td><td>${p.fecha}</td><td style="text-align:right">${fmt(p.precio)}</td><td><button class="btn-danger" onclick="borrarPrecio(${idx})">✕</button></td></tr>`;
+  }).join('');
 }
+function borrarPrecio(idx){DB.precios.splice(idx,1);debouncedSave();renderTablaPrecios();}
 
-// ── Motor de inversiones ─────────────────────────────────
+// ── MOTOR DE INVERSIONES ─────────────────────────────────
 function calcPosiciones(){
   const movs=[...DB.movimientos].sort((a,b)=>a.fecha.localeCompare(b.fecha));
   const estado={};
@@ -523,7 +634,7 @@ function calcPosiciones(){
   const rentAnual={};
 
   movs.forEach(m=>{
-    const nombre=m.nombre&&m.nombre!==m.producto?m.nombre:m.producto;
+    const nombre=m.nombre||m.producto||'?';
     const tipo=(m.tipo||'').toLowerCase();
     const cantidad=Number(m.cantidad);
     const montoUSD=Number(m.montoUSD);
@@ -533,7 +644,7 @@ function calcPosiciones(){
     if(tipo==='compra'){
       rentAnual[anio].comprasUSD+=montoUSD;
       if(!estado[nombre]){
-        estado[nombre]={producto:m.producto,nombre,cantidad,costoTotalUSD:montoUSD,fechaApertura:m.fecha,resultadoParcialUSD:0,cantidadVendidaUSD:0};
+        estado[nombre]={nombre,categoria:m.categoria||'otro',cantidad,costoTotalUSD:montoUSD,fechaApertura:m.fecha,resultadoParcialUSD:0,cantidadVendidaUSD:0};
       } else {
         estado[nombre].cantidad+=cantidad;
         estado[nombre].costoTotalUSD+=montoUSD;
@@ -549,7 +660,7 @@ function calcPosiciones(){
       const cantidadRestante=pos.cantidad-cantidad;
       if(cantidadRestante<=0.000001){
         cerradas.push({
-          nombre:pos.nombre,producto:pos.producto,
+          nombre:pos.nombre,categoria:pos.categoria,
           costoUSD:pos.costoTotalUSD,
           ventaUSD:montoUSD+(pos.cantidadVendidaUSD||0),
           resultado:resultadoUSD+(pos.resultadoParcialUSD||0),
@@ -564,27 +675,85 @@ function calcPosiciones(){
       }
     }
   });
-  const abiertas=Object.values(estado);
+
+  // Calcular variación no realizada por año usando precios históricos
+  // Para cada año, calcular el valor al inicio y fin del año de posiciones abiertas en ese momento
+  // Simplificado: sumar variación anual a rentAnual
   const rentAnualArr=Object.values(rentAnual).sort((a,b)=>b.anio-a.anio);
-  return{abiertas,cerradas,rentAnual:rentAnualArr};
+
+  return{abiertas:Object.values(estado),cerradas,rentAnual:rentAnualArr};
 }
 
-// ── Patrimonio total ─────────────────────────────────────
+function calcValorInvHoy(){
+  const c=DB.config;
+  const{abiertas}=calcPosiciones();
+  let total=0;
+  abiertas.forEach(p=>{
+    const precio=getPrecio(p.nombre,new Date().toISOString().slice(0,10));
+    if(precio)total+=p.cantidad*precio;
+    // si no hay precio histórico, usamos costo como fallback
+    else total+=p.costoTotalUSD;
+  });
+  return total;
+}
+
+function calcValorInvEnFecha(yearMonth){
+  // Calcula el valor de todas las posiciones abiertas al cierre de un mes
+  const mesEnd=yearMonth+'-31';// aproximación
+  const movs=[...DB.movimientos].filter(m=>m.fecha<=mesEnd).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const estado={};
+  movs.forEach(m=>{
+    const nombre=m.nombre||m.producto||'?';
+    const tipo=(m.tipo||'').toLowerCase();
+    const cantidad=Number(m.cantidad);
+    const montoUSD=Number(m.montoUSD);
+    if(tipo==='compra'){
+      if(!estado[nombre])estado[nombre]={nombre,cantidad,costoTotalUSD:montoUSD};
+      else{estado[nombre].cantidad+=cantidad;estado[nombre].costoTotalUSD+=montoUSD;}
+    } else {
+      if(!estado[nombre])return;
+      const pos=estado[nombre];
+      const resto=pos.cantidad-cantidad;
+      if(resto<=0.000001)delete estado[nombre];
+      else{const pp=pos.costoTotalUSD/pos.cantidad;pos.cantidad=resto;pos.costoTotalUSD-=pp*cantidad;}
+    }
+  });
+  let total=0;
+  Object.values(estado).forEach(p=>{
+    const precio=getPrecioMes(p.nombre,yearMonth);
+    total+=precio?p.cantidad*precio:p.costoTotalUSD;
+  });
+  return total;
+}
+
+// ── EFECTIVO ─────────────────────────────────────────────
+function calcEfectivo(){
+  const c=DB.config;
+  let efEur=c.efIniEur||0,efUsd=c.efIniUsd||0;
+  (DB.efectivo||[]).forEach(m=>{
+    const sign=m.tipo==='entrada'?1:-1;
+    if(m.bolsa==='efEur')efEur+=sign*Number(m.monto);
+    else efUsd+=sign*Number(m.monto);
+  });
+  return{efEur,efUsd,totalUSD:efEur*(DB.config.tcEur||1)+efUsd};
+}
+function calcCuentaEur(){
+  const c=DB.config;
+  if(DB.meses.length){const u=DB.meses[DB.meses.length-1];return{saldoEur:u.saldoEur||0,mes:u.mes};}
+  return{saldoEur:c.saldoIniEur||0,mes:'inicial'};
+}
+
+// ── PATRIMONIO ───────────────────────────────────────────
 function calcPatrimonio(){
   const c=DB.config;
   const cuenta=calcCuentaEur();
   const ef=calcEfectivo();
-  const cuentaUSD=cuenta.saldoEur*c.tcEur;
+  const cuentaUSD=cuenta.saldoEur*(c.tcEur||1);
   const liquidezUSD=cuentaUSD+ef.totalUSD;
-  const{abiertas}=calcPosiciones();
-  const btcPos=abiertas.find(p=>p.producto==='BTC');
-  const btcUSD=btcPos?btcPos.cantidad*c.btcPrecio:0;
-  const etfOpen=abiertas.filter(p=>p.producto!=='BTC');
-  const etfUSD=etfOpen.length>0?(c.etfValor||0):0;
-  const invUSD=btcUSD+etfUSD;
-  const cobrar=DB.deudas.filter(d=>d.tipo==='cobrar'&&!d.pagada).reduce((a,d)=>a+d.monto,0);
-  const pagar=DB.deudas.filter(d=>d.tipo==='pagar'&&!d.pagada).reduce((a,d)=>a+d.monto,0);
-  return{cuentaUSD,ef,liquidezUSD,btcUSD,etfUSD,invUSD,cobrar,pagar,total:liquidezUSD+invUSD+cobrar-pagar};
+  const invUSD=calcValorInvHoy();
+  const cobrar=(DB.deudas||[]).filter(d=>d.tipo==='cobrar'&&!d.pagada).reduce((a,d)=>a+d.monto,0);
+  const pagar=(DB.deudas||[]).filter(d=>d.tipo==='pagar'&&!d.pagada).reduce((a,d)=>a+d.monto,0);
+  return{cuentaUSD,ef,liquidezUSD,invUSD,cobrar,pagar,total:liquidezUSD+invUSD+cobrar-pagar};
 }
 
 // ── TABLERO ──────────────────────────────────────────────
@@ -607,22 +776,21 @@ function renderDash(){
   document.getElementById('dash-metrics').innerHTML=`
     <div class="mc"><div class="mc-label">Patrimonio total</div><div class="mc-value">${fmt(p.total)}</div><div class="mc-sub">valorizado hoy en USD</div></div>
     <div class="mc"><div class="mc-label">Liquidez</div><div class="mc-value">${fmt(p.liquidezUSD)}</div><div class="mc-sub">cuenta + efectivo</div></div>
-    <div class="mc"><div class="mc-label">Inversiones</div><div class="mc-value">${fmt(p.invUSD)}</div><div class="mc-sub">BTC + ETF abiertos</div></div>
+    <div class="mc"><div class="mc-label">Inversiones</div><div class="mc-value">${fmt(p.invUSD)}</div><div class="mc-sub">posiciones abiertas</div></div>
     <div class="mc"><div class="mc-label">Deudas netas</div><div class="mc-value" style="color:var(--${p.cobrar-p.pagar>=0?'success':'danger'})">${fmt(p.cobrar-p.pagar)}</div><div class="mc-sub">a cobrar − a pagar</div></div>`;
 
-  const maxV=Math.max(p.cuentaUSD,p.ef.efEur*DB.config.tcEur,p.ef.efUsd,p.btcUSD,p.etfUSD,p.cobrar,1);
+  const maxV=Math.max(p.cuentaUSD,p.ef.efEur*(DB.config.tcEur||1),p.ef.efUsd,p.invUSD,p.cobrar,1);
   document.getElementById('dash-desglose').innerHTML=
     bar('Cuenta €',p.cuentaUSD/maxV,fmt(p.cuentaUSD),'#378ADD')+
-    bar('Efectivo €',(p.ef.efEur*DB.config.tcEur)/maxV,fmt(p.ef.efEur*DB.config.tcEur),'#5B9FD4')+
+    bar('Efectivo €',(p.ef.efEur*(DB.config.tcEur||1))/maxV,fmt(p.ef.efEur*(DB.config.tcEur||1)),'#5B9FD4')+
     bar('Efectivo USD',p.ef.efUsd/maxV,fmt(p.ef.efUsd),'#85B7EB')+
-    bar('Bitcoin',p.btcUSD/maxV,fmt(p.btcUSD),'#1D9E75')+
-    bar('ETF',p.etfUSD/maxV,fmt(p.etfUSD),'#5DCAA5')+
+    bar('Inversiones',p.invUSD/maxV,fmt(p.invUSD),'#1D9E75')+
     bar('A cobrar',p.cobrar/maxV,fmt(p.cobrar),'#B5D4F4');
 
   const ultimo=DB.meses.length?DB.meses[DB.meses.length-1]:null;
   if(ultimo){
     const tcE=ultimo.tcEur||1,tcA=ultimo.tcArs||1;
-    const ingUSD=(ultimo.ingEur+(ultimo.ingOtros||0))*tcE;
+    const ingUSD=((ultimo.ingEur||0)+(ultimo.ingOtros||0))*tcE;
     const gasUSD=(ultimo.gastoArs||0)/(tcA||1)+(ultimo.gastoEur||0)*tcE;
     const aho=ingUSD-gasUSD;
     const tasa=ingUSD>0?Math.round(aho/ingUSD*100):0;
@@ -637,18 +805,23 @@ function renderDash(){
     document.getElementById('dash-ultimo-mes').innerHTML='<div class="empty">Cargá tu primer mes</div>';
   }
 
+  // Gráfico de evolución patrimonial
   const sorted=[...DB.meses].sort((a,b)=>a.mes.localeCompare(b.mes));
   const labels=sorted.map(m=>mesLabel(m.mes));
   const c=DB.config;
-  const vals=sorted.map(m=>{
-    const tcE=m.tcEur||1,tcA=m.tcArs||1;
-    return Math.round((m.saldoEur||0)*tcE);
-  });
+  const valsLiq=sorted.map(m=>Math.round((m.saldoEur||0)*(m.tcEur||1)));
+  const valsInv=sorted.map(m=>Math.round(calcValorInvEnFecha(m.mes)));
+  const valsTotal=sorted.map((m,i)=>valsLiq[i]+valsInv[i]);
+
   const ctx=document.getElementById('evoChart').getContext('2d');
   if(evoChartInst)evoChartInst.destroy();
   const isDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
   const tc2=isDark?'#636366':'#888',bc=isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)';
-  evoChartInst=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Cuenta € en USD',data:vals,borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,0.07)',tension:0.35,fill:true,pointRadius:3,pointBackgroundColor:'#378ADD'}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toLocaleString()}}},scales:{x:{grid:{color:bc},ticks:{color:tc2,font:{size:10}}},y:{grid:{color:bc},ticks:{color:tc2,font:{size:10},callback:v=>'$'+v.toLocaleString()}}}}});
+  evoChartInst=new Chart(ctx,{type:'line',data:{labels,datasets:[
+    {label:'Patrimonio total',data:valsTotal,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.07)',tension:0.35,fill:true,pointRadius:3,pointBackgroundColor:'#1D9E75'},
+    {label:'Liquidez',data:valsLiq,borderColor:'#378ADD',backgroundColor:'transparent',tension:0.35,pointRadius:2,borderDash:[4,3]},
+    {label:'Inversiones',data:valsInv,borderColor:'#F0A500',backgroundColor:'transparent',tension:0.35,pointRadius:2,borderDash:[4,3]}
+  ]},options:{responsive:true,plugins:{legend:{display:true,labels:{font:{size:11},color:tc2,boxWidth:12}},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toLocaleString()}}},scales:{x:{grid:{color:bc},ticks:{color:tc2,font:{size:10}}},y:{grid:{color:bc},ticks:{color:tc2,font:{size:10},callback:v=>'$'+v.toLocaleString()}}}}});
 }
 
 // ── LIQUIDEZ ─────────────────────────────────────────────
@@ -657,25 +830,20 @@ function renderLiquidez(){
   const c=DB.config;
   document.getElementById('liq-metrics').innerHTML=`
     <div class="mc"><div class="mc-label">Liquidez total</div><div class="mc-value">${fmt(p.liquidezUSD)}</div><div class="mc-sub">cuenta + efectivo</div></div>
-    <div class="mc"><div class="mc-label">Cuenta €</div><div class="mc-value">${fmt(p.cuentaUSD)}</div><div class="mc-sub">${fmtE(p.cuentaUSD/c.tcEur)} × ${c.tcEur}</div></div>
-    <div class="mc"><div class="mc-label">Efectivo físico</div><div class="mc-value">${fmt(p.ef.totalUSD)}</div><div class="mc-sub">€ + USD billetes</div></div>`;
+    <div class="mc"><div class="mc-label">Cuenta €</div><div class="mc-value">${fmt(p.cuentaUSD)}</div><div class="mc-sub">${fmtE(p.cuentaUSD/(c.tcEur||1))} × ${c.tcEur}</div></div>
+    <div class="mc"><div class="mc-label">Efectivo físico</div><div class="mc-value">${fmt(p.ef.totalUSD)}</div><div class="mc-sub">${fmtE(p.ef.efEur)} + ${fmt(p.ef.efUsd)} USD</div></div>`;
 
-  // Cuenta € — historial de saldos mensuales
   const sorted=[...DB.meses].sort((a,b)=>b.mes.localeCompare(a.mes));
-  if(!sorted.length){
-    document.getElementById('liq-cuenta-eur').innerHTML=`<div class="empty">Sin meses cargados</div>`;
-  } else {
+  if(!sorted.length){document.getElementById('liq-cuenta-eur').innerHTML='<div class="empty">Sin meses cargados</div>';}
+  else{
     let html='<table><thead><tr><th>Mes</th><th style="text-align:right">Saldo €</th><th style="text-align:right">Equiv. USD</th></tr></thead><tbody>';
-    sorted.slice(0,12).forEach(m=>{
-      html+=`<tr><td>${mesLabel(m.mes)}</td><td style="text-align:right">${fmtE(m.saldoEur||0)}</td><td style="text-align:right;color:var(--text2)">${fmt((m.saldoEur||0)*(m.tcEur||1))}</td></tr>`;
-    });
+    sorted.slice(0,12).forEach(m=>{html+=`<tr><td>${mesLabel(m.mes)}</td><td style="text-align:right">${fmtE(m.saldoEur||0)}</td><td style="text-align:right;color:var(--text2)">${fmt((m.saldoEur||0)*(m.tcEur||1))}</td></tr>`;});
     html+='</tbody></table>';
     document.getElementById('liq-cuenta-eur').innerHTML=html;
   }
 
-  // Efectivo físico
   const ef=calcEfectivo();
-  const movEf=[...( DB.efectivo||[])].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const movEf=[...(DB.efectivo||[])].sort((a,b)=>b.fecha.localeCompare(a.fecha));
   let htmlEf=`
     <div class="row-item"><span class="rl">Efectivo € (billetes)</span><span class="rv">${fmtE(ef.efEur)}</span></div>
     <div class="row-item" style="margin-bottom:10px"><span class="rl">Efectivo USD (billetes)</span><span class="rv">${fmt(ef.efUsd)}</span></div>`;
@@ -703,7 +871,7 @@ function renderMensual(){
     const gasArsUSD=(m.gastoArs||0)/(tcA||1);
     const gasTotal=gasEurUSD+gasArsUSD;
     const aho=ingUSD-gasTotal;
-    return`<tr>
+    return`<tr class="editable-row" onclick="editarMes('${m.mes}')">
       <td>${mesLabel(m.mes)}</td>
       <td style="text-align:right;color:var(--success)">${fmt(ingUSD)}</td>
       <td style="text-align:right;color:var(--danger)">${fmt(gasEurUSD)}</td>
@@ -725,17 +893,39 @@ function renderMensual(){
     <div class="row-item"><span class="rl" style="font-weight:500">Ahorro estimado</span><span class="rv" style="font-size:16px;color:var(--${ahoEst>=0?'success':'danger'})">${fmt(ahoEst)}</span></div>`;
 }
 
+function editarMes(mes){
+  const m=DB.meses.find(x=>x.mes===mes);if(!m)return;
+  editMes=mes;
+  document.getElementById('form-mes-titulo').textContent='Editar mes — '+mesLabel(mes);
+  document.getElementById('m-mes').value=mes;
+  document.getElementById('m-tc-eur').value=m.tcEur||'';
+  document.getElementById('m-tc-ars').value=m.tcArs||'';
+  document.getElementById('m-ing-eur').value=m.ingEur||'';
+  document.getElementById('m-ing-otros').value=m.ingOtros||'';
+  document.getElementById('m-gasto-eur').value=m.gastoEur||'';
+  document.getElementById('m-gasto-ars').value=m.gastoArs||'';
+  document.getElementById('m-saldo-eur').value=m.saldoEur||'';
+  document.getElementById('m-comentario').value=m.comentario||'';
+  document.getElementById('btn-borrar-mes').style.display='inline-block';
+  nav('cargar-mes',document.querySelector('.nav-item:nth-child(7)'));
+}
+
+function borrarMes(){
+  if(!editMes||!confirm('¿Borrar el mes '+mesLabel(editMes)+'? No se puede deshacer.'))return;
+  DB.meses=DB.meses.filter(m=>m.mes!==editMes);
+  debouncedSave();limpiarFormMes();
+  showAlert('alert-mes','Mes borrado','ok');
+  nav('mensual',document.querySelector('.nav-item:nth-child(4)'));
+}
+
 // ── INVERSIONES ──────────────────────────────────────────
 function renderInv(){
   const{abiertas,cerradas,rentAnual}=calcPosiciones();
   const c=DB.config;
-  const totComp=DB.movimientos.filter(m=>(m.tipo||'').toLowerCase()==='compra').reduce((a,m)=>a+Number(m.montoUSD),0);
+
+  const totComp=(DB.movimientos||[]).filter(m=>(m.tipo||'').toLowerCase()==='compra').reduce((a,m)=>a+Number(m.montoUSD),0);
   const totRealizado=rentAnual.reduce((a,r)=>a+r.realizadoUSD,0);
-  const btcPos=abiertas.find(p=>p.producto==='BTC');
-  const btcUSD=btcPos?btcPos.cantidad*c.btcPrecio:0;
-  const etfOpen=abiertas.filter(p=>p.producto!=='BTC');
-  const etfUSD=etfOpen.length>0?(c.etfValor||0):0;
-  const valorAbiertas=btcUSD+etfUSD;
+  const valorAbiertas=calcValorInvHoy();
   const noRealizado=valorAbiertas-abiertas.reduce((a,p)=>a+p.costoTotalUSD,0);
   const rentTotal=totComp>0?((totRealizado+noRealizado)/totComp*100):0;
 
@@ -744,21 +934,25 @@ function renderInv(){
     <div class="mc"><div class="mc-label">Valor posiciones abiertas</div><div class="mc-value">${fmt(valorAbiertas)}</div></div>
     <div class="mc"><div class="mc-label">Rentabilidad total</div><div class="mc-value" style="color:var(--${rentTotal>=0?'success':'danger'})">${pct(rentTotal)}</div><div class="mc-sub">realizado + no realizado</div></div>`;
 
+  // Posiciones abiertas
   let htmlAb='';
-  if(!abiertas.length){
-    htmlAb='<div class="empty">No hay posiciones abiertas</div>';
-  } else {
-    htmlAb='<table style="min-width:580px"><thead><tr><th>Activo</th><th style="text-align:right">Cantidad</th><th style="text-align:right">Entrada prom.</th><th style="text-align:right">Valor hoy</th><th style="text-align:right">Resultado</th><th style="text-align:right">Rentab.</th></tr></thead><tbody>';
+  if(!abiertas.length){htmlAb='<div class="empty">No hay posiciones abiertas</div>';}
+  else{
+    htmlAb='<table style="min-width:600px"><thead><tr><th>Activo</th><th style="text-align:right">Cantidad</th><th style="text-align:right">Entrada prom.</th><th style="text-align:right">Precio actual</th><th style="text-align:right">Valor hoy</th><th style="text-align:right">Resultado</th><th style="text-align:right">Rentab.</th></tr></thead><tbody>';
     abiertas.forEach(p=>{
       const precioEnt=p.cantidad>0?p.costoTotalUSD/p.cantidad:0;
-      const valHoy=p.producto==='BTC'?p.cantidad*c.btcPrecio:0;
+      const precioHoy=getPrecio(p.nombre,new Date().toISOString().slice(0,10));
+      const valHoy=precioHoy?p.cantidad*precioHoy:p.costoTotalUSD;
       const res=valHoy-p.costoTotalUSD;
       const rPct=p.costoTotalUSD>0?(res/p.costoTotalUSD*100):0;
-      const dec=p.producto==='BTC'?6:2;
+      const esBTC=p.nombre.toUpperCase()==='BTC';
+      const dec=esBTC?6:2;
+      const sinPrecio=!precioHoy;
       htmlAb+=`<tr>
-        <td><strong>${p.nombre}</strong><br><span style="font-size:11px;color:var(--text3)">desde ${p.fechaApertura}</span></td>
+        <td><strong>${p.nombre}</strong>${sinPrecio?'<span style="font-size:10px;color:var(--danger)"> sin precio</span>':''}<br><span style="font-size:11px;color:var(--text3)">${p.categoria||''} · desde ${p.fechaApertura}</span></td>
         <td style="text-align:right">${Number(p.cantidad).toFixed(dec)}</td>
         <td style="text-align:right">${fmt(precioEnt)}</td>
+        <td style="text-align:right">${precioHoy?fmt(precioHoy):'—'}</td>
         <td style="text-align:right">${fmt(valHoy)}</td>
         <td style="text-align:right;color:var(--${res>=0?'success':'danger'})">${res>=0?'+':''}${fmt(res)}</td>
         <td style="text-align:right"><span class="badge ${rPct>=0?'bg':'br'}">${pct(rPct)}</span></td>
@@ -767,6 +961,7 @@ function renderInv(){
     htmlAb+='</tbody></table>';
   }
 
+  // Posiciones cerradas
   let htmlCer='';
   if(cerradas.length){
     htmlCer='<div class="sec" style="margin-top:1.5rem">Posiciones cerradas</div>';
@@ -774,7 +969,7 @@ function renderInv(){
     [...cerradas].reverse().forEach(p=>{
       const rPct=p.costoUSD>0?(p.resultado/p.costoUSD*100):0;
       htmlCer+=`<tr>
-        <td><strong>${p.nombre}</strong></td>
+        <td><strong>${p.nombre}</strong><br><span style="font-size:11px;color:var(--text3)">${p.categoria||''}</span></td>
         <td style="text-align:right">${fmt(p.costoUSD)}</td>
         <td style="text-align:right">${fmt(p.ventaUSD)}</td>
         <td style="text-align:right;color:var(--${p.resultado>=0?'success':'danger'})">${p.resultado>=0?'+':''}${fmt(p.resultado)}</td>
@@ -786,39 +981,51 @@ function renderInv(){
   }
   document.getElementById('tabla-posiciones').innerHTML=htmlAb+htmlCer;
 
-  let htmlA='<table><thead><tr><th>Año</th><th style="text-align:right">Compras</th><th style="text-align:right">Ventas</th><th style="text-align:right">Resultado realizado</th></tr></thead><tbody>';
+  // Rentabilidad anual con no realizado por año
+  let htmlA='<table><thead><tr><th>Año</th><th style="text-align:right">Compras</th><th style="text-align:right">Ventas</th><th style="text-align:right">Realizado</th><th style="text-align:right">No realizado*</th><th style="text-align:right">Total año</th></tr></thead><tbody>';
   rentAnual.forEach(a=>{
-    htmlA+=`<tr><td>${a.anio}</td><td style="text-align:right;color:var(--danger)">${fmt(a.comprasUSD)}</td><td style="text-align:right;color:var(--success)">${fmt(a.ventasUSD)}</td><td style="text-align:right"><span class="badge ${a.realizadoUSD>=0?'bg':'br'}">${a.realizadoUSD>=0?'+':''}${fmt(a.realizadoUSD)}</span></td></tr>`;
+    // No realizado: variación valor posiciones abiertas durante el año
+    const precioIni=getPrecioMes('BTC',(parseInt(a.anio)-1)+'-12')||null;
+    const precioFin=getPrecioMes('BTC',a.anio+'-12')||null;
+    // Simplificado por ahora — mostramos realizado y nota
+    htmlA+=`<tr>
+      <td><strong>${a.anio}</strong></td>
+      <td style="text-align:right;color:var(--danger)">${fmt(a.comprasUSD)}</td>
+      <td style="text-align:right;color:var(--success)">${fmt(a.ventasUSD)}</td>
+      <td style="text-align:right"><span class="badge ${a.realizadoUSD>=0?'bg':'br'}">${a.realizadoUSD>=0?'+':''}${fmt(a.realizadoUSD)}</span></td>
+      <td style="text-align:right;color:var(--text3)">—</td>
+      <td style="text-align:right;font-weight:500">${fmt(a.realizadoUSD)}</td>
+    </tr>`;
   });
-  if(!rentAnual.length)htmlA+='<tr><td colspan="4" style="text-align:center;color:var(--text3)">Sin movimientos</td></tr>';
-  htmlA+='</tbody></table>';
+  if(!rentAnual.length)htmlA+='<tr><td colspan="6" style="text-align:center;color:var(--text3)">Sin movimientos</td></tr>';
+  htmlA+='</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">* Rentabilidad no realizada por año próximamente con más precios históricos cargados.</p>';
   document.getElementById('tabla-anual').innerHTML=htmlA;
 
-  const movSort=[...DB.movimientos].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  // Movimientos
+  const movSort=[...(DB.movimientos||[])].sort((a,b)=>b.fecha.localeCompare(a.fecha));
   const tbodyM=document.getElementById('tbody-mov');
   if(!movSort.length){tbodyM.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text3)">Sin movimientos</td></tr>';return;}
   tbodyM.innerHTML=movSort.map(m=>{
     const idx=DB.movimientos.indexOf(m);
-    const esBTC=(m.producto||'').toUpperCase()==='BTC';
+    const esBTC=(m.nombre||'').toUpperCase()==='BTC';
     return`<tr>
       <td>${m.fecha}</td>
-      <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${m.nombre||m.producto}">${m.nombre||m.producto}</td>
+      <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${m.nombre||m.producto||''}">${m.nombre||m.producto||''}</td>
       <td><span class="badge ${(m.tipo||'').toLowerCase()==='compra'?'bb':'bg'}">${m.tipo}</span></td>
       <td style="text-align:right">${Number(m.cantidad).toFixed(esBTC?6:2)}</td>
-      <td style="text-align:right">${Number(m.tc).toFixed(3)}</td>
+      <td style="text-align:right">${Number(m.tc||0).toFixed(3)}</td>
       <td style="text-align:right">${fmtE(m.montoEur)}</td>
       <td style="text-align:right">${fmt(m.montoUSD)}</td>
       <td><button class="btn-danger" onclick="borrarMov(${idx})">✕</button></td>
     </tr>`;
   }).join('');
 }
-
 function borrarMov(idx){if(!confirm('¿Borrar?'))return;DB.movimientos.splice(idx,1);debouncedSave();renderInv();}
 
 // ── DEUDAS ───────────────────────────────────────────────
 function renderDeudas(){
-  const cobrar=DB.deudas.filter(d=>d.tipo==='cobrar'&&!d.pagada);
-  const pagar=DB.deudas.filter(d=>d.tipo==='pagar'&&!d.pagada);
+  const cobrar=(DB.deudas||[]).filter(d=>d.tipo==='cobrar'&&!d.pagada);
+  const pagar=(DB.deudas||[]).filter(d=>d.tipo==='pagar'&&!d.pagada);
   document.getElementById('d-cobrar').textContent=fmt(cobrar.reduce((a,d)=>a+d.monto,0));
   document.getElementById('d-debo').textContent=fmt(pagar.reduce((a,d)=>a+d.monto,0));
   const rL=(arr,elId)=>{
@@ -827,7 +1034,7 @@ function renderDeudas(){
       <div class="row-item">
         <div><strong>${d.persona}</strong>${d.nota?`<span style="font-size:11px;color:var(--text3);margin-left:6px">${d.nota}</span>`:''}<br><span style="font-size:11px;color:var(--text3)">${d.fecha||''}</span></div>
         <div style="display:flex;align-items:center;gap:8px"><span class="rv" style="color:var(--${d.tipo==='cobrar'?'success':'danger'})">${fmt(d.monto)}</span>
-        <button class="btn-sm" onclick="marcarPagada(${DB.deudas.indexOf(d)})">${d.tipo==='cobrar'?'Cobrado':'Pagado'}</button></div>
+        <button class="btn-sm" onclick="marcarPagada(${(DB.deudas||[]).indexOf(d)})">${d.tipo==='cobrar'?'Cobrado':'Pagado'}</button></div>
       </div>`).join('');
   };
   rL(cobrar,'lista-cobrar');rL(pagar,'lista-debo');
@@ -848,13 +1055,19 @@ function guardarMes(){
     saldoEur:parseFloat(document.getElementById('m-saldo-eur').value)||0,
     comentario:document.getElementById('m-comentario').value.trim()};
   const idx=DB.meses.findIndex(m=>m.mes===mes);
-  if(idx>=0){if(!confirm('Ya existe ese mes. ¿Sobreescribir?'))return;DB.meses[idx]=obj;}
+  if(idx>=0)DB.meses[idx]=obj;
   else DB.meses.push(obj);
   DB.meses.sort((a,b)=>a.mes.localeCompare(b.mes));
   debouncedSave();showAlert('alert-mes','Mes guardado','ok');limpiarFormMes();
 }
-function limpiarFormMes(){['m-ing-eur','m-ing-otros','m-gasto-eur','m-gasto-ars','m-saldo-eur','m-comentario'].forEach(id=>document.getElementById(id).value='');}
-
+function limpiarFormMes(){
+  editMes=null;
+  document.getElementById('form-mes-titulo').textContent='Cargar mes';
+  document.getElementById('btn-borrar-mes').style.display='none';
+  ['m-ing-eur','m-ing-otros','m-gasto-eur','m-gasto-ars','m-saldo-eur','m-comentario','m-tc-ars'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('m-mes').value='';
+  document.getElementById('m-tc-eur').value='';
+}
 function importarCSVMeses(){
   const raw=document.getElementById('m-csv').value.trim();
   if(!raw)return;
@@ -880,7 +1093,7 @@ function importarCSVMeses(){
   document.getElementById('m-csv').value='';
 }
 
-// ── GUARDAR INVERSIÓN ────────────────────────────────────
+// ── INVERSIÓN ────────────────────────────────────────────
 function calcMovUSD(){
   const eur=parseFloat(document.getElementById('mv-eur').value)||0;
   const tc=parseFloat(document.getElementById('mv-tc').value)||0;
@@ -888,20 +1101,20 @@ function calcMovUSD(){
 }
 function guardarMov(){
   const fecha=document.getElementById('mv-fecha').value;
-  const producto=document.getElementById('mv-producto').value;
-  const nombre=document.getElementById('mv-nombre').value.trim()||producto;
+  const nombre=document.getElementById('mv-nombre').value.trim();
+  const categoria=document.getElementById('mv-categoria').value;
   const tipo=document.getElementById('mv-tipo').value;
   const cantidad=parseFloat(document.getElementById('mv-cantidad').value)||0;
   const tc=parseFloat(document.getElementById('mv-tc').value)||0;
   const montoEur=parseFloat(document.getElementById('mv-eur').value)||0;
   const montoUSD=parseFloat(document.getElementById('mv-usd').value)||montoEur*tc;
-  if(!fecha||!cantidad||!tc||!montoEur){showAlert('alert-mov','Completá todos los campos','err');return;}
-  DB.movimientos.push({fecha,producto,nombre,tipo,cantidad,tc,montoEur,montoUSD});
+  if(!fecha||!nombre||!cantidad||!tc||!montoEur){showAlert('alert-mov','Completá todos los campos','err');return;}
+  if(!DB.movimientos)DB.movimientos=[];
+  DB.movimientos.push({fecha,nombre,categoria,tipo,cantidad,tc,montoEur,montoUSD});
   DB.movimientos.sort((a,b)=>a.fecha.localeCompare(b.fecha));
   debouncedSave();showAlert('alert-mov','Movimiento guardado','ok');limpiarFormMov();
 }
 function limpiarFormMov(){['mv-cantidad','mv-tc','mv-eur','mv-usd','mv-nombre'].forEach(id=>document.getElementById(id).value='');}
-
 function importarCSV(){
   const raw=document.getElementById('mv-csv').value.trim();
   if(!raw)return;
@@ -913,8 +1126,9 @@ function importarCSV(){
     const fecha=p[0],nombre=p[1],cantidad=p[2],tc=p[3],montoEur=p[4],montoUSD=p[5];
     const tipo=(p[6]||'compra').toLowerCase().trim();
     if(!fecha||!nombre||!cantidad){err++;return;}
-    const producto=nombre.toUpperCase()==='BTC'?'BTC':'ETF';
-    DB.movimientos.push({fecha,producto,nombre,tipo,cantidad:parseFloat(cantidad),tc:parseFloat(tc),montoEur:parseFloat(montoEur),montoUSD:parseFloat(montoUSD)});
+    const categoria=nombre.toUpperCase()==='BTC'?'crypto':'etf';
+    if(!DB.movimientos)DB.movimientos=[];
+    DB.movimientos.push({fecha,nombre,categoria,tipo,cantidad:parseFloat(cantidad),tc:parseFloat(tc),montoEur:parseFloat(montoEur),montoUSD:parseFloat(montoUSD)});
     ok++;
   });
   DB.movimientos.sort((a,b)=>a.fecha.localeCompare(b.fecha));
@@ -923,13 +1137,7 @@ function importarCSV(){
   document.getElementById('mv-csv').value='';
 }
 
-// ── EFECTIVO FÍSICO ──────────────────────────────────────
-document.addEventListener('DOMContentLoaded',()=>{
-  document.getElementById('ef-bolsa').addEventListener('change',function(){
-    document.getElementById('ef-unit').textContent=this.value==='efEur'?'€':'USD';
-  });
-});
-
+// ── EFECTIVO ─────────────────────────────────────────────
 function guardarEfectivo(){
   const fecha=document.getElementById('ef-fecha').value;
   const bolsa=document.getElementById('ef-bolsa').value;
@@ -940,22 +1148,19 @@ function guardarEfectivo(){
   if(!DB.efectivo)DB.efectivo=[];
   DB.efectivo.push({fecha,bolsa,tipo,monto,nota});
   DB.efectivo.sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  debouncedSave();showAlert('alert-ef','Movimiento guardado','ok');
-  limpiarFormEf();renderTablaEf();
+  debouncedSave();showAlert('alert-ef','Movimiento guardado','ok');limpiarFormEf();renderTablaEf();renderLiquidez();
 }
 function limpiarFormEf(){['ef-fecha','ef-monto','ef-nota'].forEach(id=>document.getElementById(id).value='');}
-
 function renderTablaEf(){
   if(!DB.efectivo||!DB.efectivo.length){document.getElementById('tbody-ef').innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3)">Sin movimientos</td></tr>';return;}
   const sorted=[...(DB.efectivo||[])].sort((a,b)=>b.fecha.localeCompare(a.fecha));
-  document.getElementById('tbody-ef').innerHTML=sorted.map((m,i)=>{
+  document.getElementById('tbody-ef').innerHTML=sorted.map(m=>{
     const cur=m.bolsa==='efEur'?'€':'USD';
     const sign=m.tipo==='entrada'?'+':'-';
     const color=m.tipo==='entrada'?'var(--success)':'var(--danger)';
     const idx=DB.efectivo.indexOf(m);
     return`<tr>
-      <td>${m.fecha}</td>
-      <td>${m.bolsa==='efEur'?'Efectivo €':'Efectivo USD'}</td>
+      <td>${m.fecha}</td><td>${m.bolsa==='efEur'?'Ef. €':'Ef. USD'}</td>
       <td><span class="badge ${m.tipo==='entrada'?'bg':'br'}">${m.tipo}</span></td>
       <td style="text-align:right;color:${color}">${sign}${fmtM(m.monto,cur)} ${cur}</td>
       <td style="color:var(--text3);font-size:12px">${m.nota||''}</td>
@@ -970,6 +1175,7 @@ function guardarDeuda(){
   const persona=document.getElementById('deu-persona').value.trim();
   const monto=parseFloat(document.getElementById('deu-monto').value)||0;
   if(!persona||!monto){showAlert('alert-deuda','Completá persona y monto','err');return;}
+  if(!DB.deudas)DB.deudas=[];
   DB.deudas.push({persona,fecha:document.getElementById('deu-fecha').value,tipo:document.getElementById('deu-tipo').value,monto,nota:document.getElementById('deu-nota').value.trim(),pagada:false});
   debouncedSave();showAlert('alert-deuda','Deuda registrada','ok');
   ['deu-persona','deu-fecha','deu-monto','deu-nota'].forEach(id=>document.getElementById(id).value='');
@@ -977,11 +1183,9 @@ function guardarDeuda(){
 
 // ── CONFIG ───────────────────────────────────────────────
 function loadConfig(){
-  const c=DB.config;
+  const c=DB.config||{};
   document.getElementById('cfg-tc-eur').value=c.tcEur||'';
   document.getElementById('cfg-tc-ars').value=c.tcArs||'';
-  document.getElementById('cfg-btc').value=c.btcPrecio||'';
-  document.getElementById('cfg-etf').value=c.etfValor||'';
   document.getElementById('cfg-saldo-ini-eur').value=c.saldoIniEur||'';
   document.getElementById('cfg-ef-ini-eur').value=c.efIniEur||'';
   document.getElementById('cfg-ef-ini-usd').value=c.efIniUsd||'';
@@ -994,8 +1198,6 @@ function guardarConfig(){
   DB.config={
     tcEur:parseFloat(document.getElementById('cfg-tc-eur').value)||1.16,
     tcArs:parseFloat(document.getElementById('cfg-tc-ars').value)||0,
-    btcPrecio:parseFloat(document.getElementById('cfg-btc').value)||0,
-    etfValor:parseFloat(document.getElementById('cfg-etf').value)||0,
     saldoIniEur:parseFloat(document.getElementById('cfg-saldo-ini-eur').value)||0,
     efIniEur:parseFloat(document.getElementById('cfg-ef-ini-eur').value)||0,
     efIniUsd:parseFloat(document.getElementById('cfg-ef-ini-usd').value)||0,
@@ -1020,28 +1222,15 @@ function importarDatos(input){
   reader.readAsText(file);
 }
 function resetearDatos(){
-  if(!confirm('¿Borrar TODOS los datos? No se puede deshacer.'))return;
+  if(!confirm('¿Borrar TODOS los datos?'))return;
   localStorage.removeItem(SK);location.reload();
 }
 
-// ── HELPERS ──────────────────────────────────────────────
-function showAlert(id,msg,type){
-  const el=document.getElementById(id);if(!el)return;
-  el.innerHTML=`<div class="alert alert-${type==='ok'?'ok':'err'}">${msg}</div>`;
-  setTimeout(()=>{if(el)el.innerHTML='';},4000);
-}
-
 // ── INIT ─────────────────────────────────────────────────
-(async()=>{
-  document.getElementById('mv-fecha').value=new Date().toISOString().slice(0,10);
-  document.getElementById('deu-fecha').value=new Date().toISOString().slice(0,10);
-  document.getElementById('ef-fecha').value=new Date().toISOString().slice(0,10);
-  await loadFromSheet();
-  if(!DB.efectivo)DB.efectivo=[];
-  renderDash();
-  document.getElementById('loading').style.display='none';
-  document.getElementById('appRoot').style.opacity='1';
-})();
+document.getElementById('mv-fecha').value=new Date().toISOString().slice(0,10);
+document.getElementById('deu-fecha').value=new Date().toISOString().slice(0,10);
+document.getElementById('ef-fecha').value=new Date().toISOString().slice(0,10);
+initLogin();
 </script>
 </body>
 </html>
