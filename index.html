@@ -1026,15 +1026,31 @@ function renderInv(){
   const totalComprasAcum=(DB.movimientos||[]).filter(m=>(m.tipo||'').toLowerCase()==='compra').reduce((a,m)=>a+Number(m.montoUSD),0);
   const totalVentasAcum=(DB.movimientos||[]).filter(m=>(m.tipo||'').toLowerCase()==='venta').reduce((a,m)=>a+Number(m.montoUSD),0);
   const invNeto=totalComprasAcum-totalVentasAcum;
-  // Ganancia acumulada = valor actual + lo que ya vendiste - lo que pusiste
   const gananciaAcum=valorHoyAcum+totalVentasAcum-totalComprasAcum;
-  const rentAcumPct=totalComprasAcum>0?(gananciaAcum/totalComprasAcum*100):0;
+  const rentAcumPct=invNeto>0?(gananciaAcum/invNeto*100):0;
+
+  // TWRR — encadena rentabilidades anuales eliminando efecto de aportaciones
+  function calcRentAnioTWRR(anio){
+    const valIni=calcValorCarteraEnMes((parseInt(anio)-1)+'-12');
+    const aportes=aportacionesNetas(anio);
+    const esteAnio=anio===String(anioActual);
+    const valFin=esteAnio?calcValorInvHoy():calcValorCarteraEnMes(anio+'-12');
+    const resultado=valFin-valIni-aportes;
+    const base=valIni+Math.max(0,aportes);
+    return base>0?(resultado/base):0;
+  }
+  // Solo años con actividad o posición abierta para TWRR
+  const rentsPorAnio=aniosRange.map(a=>calcRentAnioTWRR(a));
+  const productoTWRR=rentsPorAnio.reduce((prod,r)=>prod*(1+r),1);
+  const nAnios=aniosRange.length;
+  const twrr=nAnios>0?(Math.pow(productoTWRR,1/nAnios)-1)*100:0;
 
   let htmlA=`
-    <div class="g3" style="margin-bottom:12px">
+    <div class="g4" style="margin-bottom:12px">
       <div class="mc"><div class="mc-label">Total invertido</div><div class="mc-value">${fmt(totalComprasAcum)}</div><div class="mc-sub">compras históricas</div></div>
       <div class="mc"><div class="mc-label">Ganancia acumulada</div><div class="mc-value" style="color:var(--${gananciaAcum>=0?'success':'danger'})">${gananciaAcum>=0?'+':''}${fmt(gananciaAcum)}</div><div class="mc-sub">realizado + no realizado</div></div>
-      <div class="mc"><div class="mc-label">Rentabilidad total</div><div class="mc-value" style="color:var(--${rentAcumPct>=0?'success':'danger'})">${pct(rentAcumPct)}</div><div class="mc-sub">desde el inicio</div></div>
+      <div class="mc"><div class="mc-label">Rentabilidad total</div><div class="mc-value" style="color:var(--${rentAcumPct>=0?'success':'danger'})">${pct(rentAcumPct)}</div><div class="mc-sub">sobre capital neto</div></div>
+      <div class="mc"><div class="mc-label">Rentab. anual promedio</div><div class="mc-value" style="color:var(--${twrr>=0?'success':'danger'})">${pct(twrr)}</div><div class="mc-sub">TWRR anualizado</div></div>
     </div>
     <div class="card overflow-x">
     <table style="min-width:600px"><thead><tr>
