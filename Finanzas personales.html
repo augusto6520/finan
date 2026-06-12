@@ -1,0 +1,1305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finanzas personales</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#ffffff;--bg2:#f7f7f5;--bg3:#f0efe9;
+  --text:#1a1a1a;--text2:#666;--text3:#999;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.18);
+  --success:#1D9E75;--success-bg:#E1F5EE;--success-text:#085041;
+  --danger:#D85A30;--danger-bg:#FAECE7;--danger-text:#712B13;
+  --info:#378ADD;--info-bg:#E6F1FB;--info-text:#0C447C;
+  --radius:8px;--radius-lg:12px;
+  --font:'DM Sans',system-ui,sans-serif;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
+  --text:#f2f2f7;--text2:#aeaeb2;--text3:#636366;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.2);
+  --success:#5DCAA5;--success-bg:#04342C;--success-text:#9FE1CB;
+  --danger:#F0997B;--danger-bg:#4A1B0C;--danger-text:#F5C4B3;
+  --info:#85B7EB;--info-bg:#042C53;--info-text:#B5D4F4;
+}}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap');
+body{font-family:var(--font);background:var(--bg3);color:var(--text);font-size:14px;min-height:100vh}
+.app{display:flex;min-height:100vh}
+.sidebar{width:200px;flex-shrink:0;background:var(--bg2);border-right:0.5px solid var(--border);padding:1.25rem 0.75rem;display:flex;flex-direction:column;gap:2px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar-logo{font-size:15px;font-weight:500;padding:0 8px;margin-bottom:16px;color:var(--text)}
+.sidebar-logo span{font-size:11px;font-weight:400;color:var(--text3);display:block;margin-top:1px}
+.sync-status{font-size:11px;padding:4px 8px;border-radius:var(--radius);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.sync-ok{background:var(--success-bg);color:var(--success-text)}
+.sync-err{background:var(--danger-bg);color:var(--danger-text)}
+.sync-loading{background:var(--bg3);color:var(--text3)}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--text2);border:none;background:none;width:100%;text-align:left;transition:background 0.1s,color 0.1s}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--bg);color:var(--text);font-weight:500;box-shadow:0 0 0 0.5px var(--border)}
+.nav-item i{font-size:15px}
+.nav-sep{height:0.5px;background:var(--border);margin:6px 0}
+.main{flex:1;padding:1.5rem;overflow-y:auto;min-width:0}
+.page{display:none}.page.active{display:block}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px}
+.page-title{font-size:18px;font-weight:500}
+.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+@media(max-width:700px){
+  .g4,.g3{grid-template-columns:repeat(2,minmax(0,1fr))}.g2{grid-template-columns:1fr}
+  .sidebar{width:52px;padding:1rem 6px}
+  .sidebar-logo,.sidebar-logo span,.sync-status span,.nav-item span{display:none}
+  .nav-item{justify-content:center;padding:10px}
+  .fg2,.fg3{grid-template-columns:1fr}
+}
+.mc{background:var(--bg2);border-radius:var(--radius);padding:0.875rem 1rem;border:0.5px solid var(--border)}
+.mc-label{font-size:11px;color:var(--text2);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.04em}
+.mc-value{font-size:20px;font-weight:500}
+.mc-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:12px}
+.sec{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px}
+.row-item{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid var(--border);font-size:13px}
+.row-item:last-child{border-bottom:none}
+.rl{color:var(--text2)}.rv{font-weight:500}
+.badge{display:inline-flex;align-items:center;font-size:11px;padding:2px 7px;border-radius:20px;font-weight:500}
+.bg{background:var(--success-bg);color:var(--success-text)}
+.br{background:var(--danger-bg);color:var(--danger-text)}
+.bb{background:var(--info-bg);color:var(--info-text)}
+.tab-bar{display:flex;border-bottom:0.5px solid var(--border);margin-bottom:1rem;overflow-x:auto}
+.tab{padding:6px 14px;font-size:13px;cursor:pointer;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-0.5px;white-space:nowrap}
+.tab.active{color:var(--text);font-weight:500;border-bottom-color:var(--text)}
+.fl{font-size:12px;color:var(--text2);margin-bottom:3px}
+.iuwu{display:flex;align-items:center;border:0.5px solid var(--border2);border-radius:var(--radius);overflow:hidden;background:var(--bg)}
+.iuwu input,.iuwu select{border:none;flex:1;padding:7px 10px;background:transparent;color:var(--text);font-size:13px;outline:none;min-width:0;font-family:var(--font)}
+.iuwu .unit{padding:7px 10px;background:var(--bg2);font-size:11px;color:var(--text2);border-left:0.5px solid var(--border);white-space:nowrap}
+.frow{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+select,input[type=month],input[type=date]{padding:7px 10px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg);color:var(--text);font-size:13px;font-family:var(--font);width:100%;outline:none}
+textarea{width:100%;padding:8px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-size:12px;font-family:monospace;resize:vertical;outline:none}
+.btn{border:0.5px solid var(--border2);border-radius:var(--radius);padding:7px 16px;font-size:13px;cursor:pointer;background:transparent;color:var(--text);font-family:var(--font);transition:background 0.1s}
+.btn:hover{background:var(--bg2)}
+.btn-p{background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);padding:7px 16px;font-size:13px;cursor:pointer;font-weight:500;font-family:var(--font);transition:opacity 0.1s}
+.btn-p:hover{opacity:0.85}
+.btn-sm{font-size:11px;padding:3px 8px;border:0.5px solid var(--border);border-radius:var(--radius);cursor:pointer;background:transparent;color:var(--text2);font-family:var(--font)}
+.btn-sm:hover{background:var(--bg2)}
+.btn-danger{font-size:11px;padding:3px 8px;border:0.5px solid var(--danger);border-radius:var(--radius);cursor:pointer;background:transparent;color:var(--danger);font-family:var(--font)}
+.alert{padding:10px 14px;border-radius:var(--radius);font-size:13px;margin-bottom:12px}
+.alert-ok{background:var(--success-bg);color:var(--success-text)}
+.alert-err{background:var(--danger-bg);color:var(--danger-text)}
+table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+th{text-align:left;padding:6px 8px;color:var(--text2);font-weight:500;border-bottom:0.5px solid var(--border);font-size:12px}
+td{padding:8px 8px;border-bottom:0.5px solid var(--border);color:var(--text);overflow:hidden;text-overflow:ellipsis}
+tr:last-child td{border-bottom:none}
+tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
+.prog-wrap{height:4px;background:var(--bg2);border-radius:2px;overflow:hidden;margin-top:6px}
+.prog-fill{height:100%;border-radius:2px}
+.empty{text-align:center;padding:2rem;color:var(--text3);font-size:13px}
+.overflow-x{overflow-x:auto}
+.loading-overlay{position:fixed;inset:0;background:var(--bg3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:100;font-size:14px;color:var(--text2)}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin 0.7s linear infinite}
+.login-box{position:fixed;inset:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;z-index:200}
+.login-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:2rem;width:320px;text-align:center}
+.login-title{font-size:20px;font-weight:500;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:1.5rem}
+.pin-input{display:flex;gap:10px;justify-content:center;margin-bottom:1.25rem}
+.pin-input input{width:44px;height:52px;text-align:center;font-size:22px;font-weight:500;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;font-family:var(--font)}
+.pin-input input:focus{border-color:var(--info);box-shadow:0 0 0 2px var(--info-bg)}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-box" id="loginBox">
+  <div class="login-card">
+    <div style="font-size:28px;margin-bottom:8px">🔐</div>
+    <div class="login-title">Finanzas personales</div>
+    <div class="login-sub" id="loginSub">Ingresá tu PIN de 4 dígitos</div>
+    <div class="pin-input">
+      <input type="password" maxlength="1" id="p1" inputmode="numeric" oninput="pinNext(this,'p2')">
+      <input type="password" maxlength="1" id="p2" inputmode="numeric" oninput="pinNext(this,'p3')">
+      <input type="password" maxlength="1" id="p3" inputmode="numeric" oninput="pinNext(this,'p4')">
+      <input type="password" maxlength="1" id="p4" inputmode="numeric" oninput="pinSubmit()">
+    </div>
+    <div id="loginErr" style="font-size:12px;color:var(--danger);min-height:18px"></div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Cargando datos...</span></div>
+
+<div class="app" style="opacity:0;transition:opacity 0.3s" id="appRoot">
+<div class="sidebar">
+  <div class="sidebar-logo">Finanzas<span>base: USD</span></div>
+  <div class="sync-status sync-loading" id="sync-status"><i class="ti ti-cloud"></i><span>Sincronizando...</span></div>
+  <button class="nav-item active" onclick="nav('dashboard',this)"><i class="ti ti-layout-dashboard"></i><span>Tablero</span></button>
+  <button class="nav-item" onclick="nav('liquidez',this)"><i class="ti ti-wallet"></i><span>Liquidez</span></button>
+  <button class="nav-item" onclick="nav('mensual',this)"><i class="ti ti-calendar-month"></i><span>Mes a mes</span></button>
+  <button class="nav-item" onclick="nav('inversiones',this)"><i class="ti ti-chart-line"></i><span>Inversiones</span></button>
+  <button class="nav-item" onclick="nav('deudas',this)"><i class="ti ti-arrows-exchange"></i><span>Deudas</span></button>
+  <div class="nav-sep"></div>
+  <button class="nav-item" onclick="nav('cargar-mes',this)"><i class="ti ti-plus"></i><span>Cargar mes</span></button>
+  <button class="nav-item" onclick="nav('cargar-mov',this)"><i class="ti ti-trending-up"></i><span>Inversión</span></button>
+  <button class="nav-item" onclick="nav('cargar-ef',this)"><i class="ti ti-cash"></i><span>Efectivo</span></button>
+  <button class="nav-item" onclick="nav('config',this)"><i class="ti ti-settings"></i><span>Config</span></button>
+</div>
+<div class="main">
+
+<!-- TABLERO -->
+<div id="page-dashboard" class="page active">
+  <div class="page-header">
+    <div class="page-title">Tablero</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="dash-fecha" style="font-size:12px;color:var(--text3)"></span>
+      <button class="btn-sm" onclick="syncNow()"><i class="ti ti-refresh"></i></button>
+    </div>
+  </div>
+  <div class="g4" id="dash-metrics"></div>
+  <div class="g2">
+    <div class="card"><div class="sec">Desglose de patrimonio</div><div id="dash-desglose"></div></div>
+    <div class="card"><div class="sec">Último mes registrado</div><div id="dash-ultimo-mes"></div></div>
+  </div>
+  <div class="card"><div class="sec">Evolución patrimonial (USD)</div><canvas id="evoChart" height="110"></canvas></div>
+</div>
+
+<!-- LIQUIDEZ -->
+<div id="page-liquidez" class="page">
+  <div class="page-header"><div class="page-title">Liquidez</div></div>
+  <div class="g3" id="liq-metrics"></div>
+  <div class="g2">
+    <div class="card"><div class="sec">Cuenta €</div><div id="liq-cuenta-eur"></div></div>
+    <div class="card"><div class="sec">Efectivo físico</div><div id="liq-efectivo"></div></div>
+  </div>
+</div>
+
+<!-- MES A MES -->
+<div id="page-mensual" class="page">
+  <div class="page-header"><div class="page-title">Mes a mes</div></div>
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab(this,'mtab-historial')">Historial</button>
+    <button class="tab" onclick="switchTab(this,'mtab-fijos')">Imagen fija</button>
+  </div>
+  <div id="mtab-historial">
+    <p style="font-size:12px;color:var(--text3);margin-bottom:8px">Click en cualquier fila para editar ese mes.</p>
+    <div class="card overflow-x">
+      <table style="min-width:680px">
+        <thead><tr>
+          <th style="width:90px">Mes</th>
+          <th style="text-align:right;width:90px">Ingresos</th>
+          <th style="text-align:right;width:90px">Gastos €</th>
+          <th style="text-align:right;width:90px">Gastos ARS</th>
+          <th style="text-align:right;width:90px">Total gastos</th>
+          <th style="text-align:right;width:80px">Ahorro</th>
+          <th style="text-align:right;width:70px">TC €/USD</th>
+          <th style="width:140px">Comentario</th>
+        </tr></thead>
+        <tbody id="tbody-mensual"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="mtab-fijos" style="display:none">
+    <div class="card"><div class="sec">Imagen fija mensual estimada</div><div id="imagen-fija"></div></div>
+  </div>
+</div>
+
+<!-- INVERSIONES -->
+<div id="page-inversiones" class="page">
+  <div class="page-header"><div class="page-title">Inversiones</div></div>
+  <div class="g3" id="inv-metrics"></div>
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab(this,'itab-posiciones')">Posiciones</button>
+    <button class="tab" onclick="switchTab(this,'itab-anual')">Rentabilidad anual</button>
+    <button class="tab" onclick="switchTab(this,'itab-movimientos')">Movimientos</button>
+    <button class="tab" onclick="switchTab(this,'itab-precios')">Precios históricos</button>
+  </div>
+  <div id="itab-posiciones"><div class="card overflow-x"><div id="tabla-posiciones"></div></div></div>
+  <div id="itab-anual" style="display:none"><div class="card overflow-x"><div id="tabla-anual"></div></div></div>
+  <div id="itab-movimientos" style="display:none">
+    <div class="card overflow-x">
+      <table style="min-width:580px">
+        <thead><tr>
+          <th style="width:90px">Fecha</th><th style="width:160px">Activo</th><th style="width:65px">Tipo</th>
+          <th style="text-align:right;width:85px">Cantidad</th><th style="text-align:right;width:70px">TC</th>
+          <th style="text-align:right;width:80px">Monto €</th><th style="text-align:right;width:90px">Monto USD</th><th style="width:40px"></th>
+        </tr></thead>
+        <tbody id="tbody-mov"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="itab-precios" style="display:none">
+    <div class="card">
+      <div class="sec">Importar precios históricos (CSV)</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:8px">Formato: <code>activo,fecha,precio_usd</code> — usá el nombre exacto del activo.</p>
+      <textarea id="precios-csv" rows="6" placeholder="BTC,2022-12-31,16547
+BTC,2023-12-31,42258
+BTC,2024-12-31,93429"></textarea>
+      <button class="btn" style="margin-top:8px" onclick="importarPrecios()">Importar precios</button>
+      <div id="alert-precios" style="margin-top:8px"></div>
+    </div>
+    <div class="card overflow-x">
+      <div class="sec">Precios cargados</div>
+      <table><thead><tr><th>Activo</th><th>Fecha</th><th style="text-align:right">Precio USD</th><th></th></tr></thead>
+      <tbody id="tbody-precios"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- DEUDAS -->
+<div id="page-deudas" class="page">
+  <div class="page-header"><div class="page-title">Deudas</div><button class="btn" onclick="nav('cargar-deuda',null)">+ Nueva</button></div>
+  <div class="g2">
+    <div class="mc"><div class="mc-label">Me deben</div><div class="mc-value" id="d-cobrar" style="color:var(--success)">$0</div></div>
+    <div class="mc"><div class="mc-label">Debo</div><div class="mc-value" id="d-debo" style="color:var(--danger)">$0</div></div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab(this,'dtab-cobrar')">A cobrar</button>
+    <button class="tab" onclick="switchTab(this,'dtab-debo')">A pagar</button>
+  </div>
+  <div id="dtab-cobrar"><div class="card"><div id="lista-cobrar"></div></div></div>
+  <div id="dtab-debo" style="display:none"><div class="card"><div id="lista-debo"></div></div></div>
+</div>
+
+<!-- CARGAR / EDITAR MES -->
+<div id="page-cargar-mes" class="page">
+  <div class="page-header"><div class="page-title" id="form-mes-titulo">Cargar mes</div></div>
+  <div id="alert-mes"></div>
+  <div class="card">
+    <div class="sec">Período y tipo de cambio</div>
+    <div class="fg2">
+      <div class="frow"><label class="fl">Mes</label><input type="month" id="m-mes"></div>
+      <div></div>
+    </div>
+    <div class="fg2">
+      <div class="frow"><label class="fl">TC EUR/USD (el que uses ese mes)</label><div class="iuwu"><input type="number" id="m-tc-eur" placeholder="1.16" step="0.001"><div class="unit">USD/€</div></div></div>
+      <div class="frow"><label class="fl">TC ARS/USD (si aplica)</label><div class="iuwu"><input type="number" id="m-tc-ars" placeholder="0" step="1"><div class="unit">ARS/$</div></div></div>
+    </div>
+    <div class="sec" style="margin-top:1rem">Ingresos</div>
+    <div class="fg2">
+      <div class="frow"><label class="fl">Ingreso principal (€)</label><div class="iuwu"><input type="number" id="m-ing-eur" placeholder="0"><div class="unit">€</div></div></div>
+      <div class="frow"><label class="fl">Otros ingresos reales (€)</label><div class="iuwu"><input type="number" id="m-ing-otros" placeholder="0"><div class="unit">€</div></div></div>
+    </div>
+    <div class="sec" style="margin-top:1rem">Gastos del mes</div>
+    <div class="fg2">
+      <div class="frow"><label class="fl">Total gastos en € </label><div class="iuwu"><input type="number" id="m-gasto-eur" placeholder="0"><div class="unit">€</div></div></div>
+      <div class="frow"><label class="fl">Total gastos en ARS</label><div class="iuwu"><input type="number" id="m-gasto-ars" placeholder="0"><div class="unit">ARS</div></div></div>
+    </div>
+    <div class="sec" style="margin-top:1rem">Saldo Cuenta € al cierre</div>
+    <div class="fg2">
+      <div class="frow"><label class="fl">Saldo cuenta € al cierre del mes</label><div class="iuwu"><input type="number" id="m-saldo-eur" placeholder="0"><div class="unit">€</div></div></div>
+      <div></div>
+    </div>
+    <div class="sec" style="margin-top:1rem">Comentario</div>
+    <div class="frow"><textarea id="m-comentario" rows="2" placeholder="Nota opcional..."></textarea></div>
+    <div style="margin-top:1.25rem;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn-p" onclick="guardarMes()">Guardar y sincronizar</button>
+      <button class="btn" onclick="limpiarFormMes()">Limpiar</button>
+      <button class="btn btn-danger" id="btn-borrar-mes" style="display:none" onclick="borrarMes()">Borrar este mes</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="sec">Importar historial (CSV)</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:6px">Formato: <code>mes,tc_eur_usd,ing_eur,gasto_eur,saldo_eur,comentario</code></p>
+    <textarea id="m-csv" rows="5" placeholder="2026-04,1.16,2386.00,661.23,2325.00,Comentario opcional"></textarea>
+    <button class="btn" style="margin-top:8px" onclick="importarCSVMeses()">Importar CSV</button>
+  </div>
+</div>
+
+<!-- CARGAR INVERSIÓN -->
+<div id="page-cargar-mov" class="page">
+  <div class="page-header"><div class="page-title">Cargar movimiento de inversión</div></div>
+  <div id="alert-mov"></div>
+  <div class="card">
+    <div class="fg2">
+      <div class="frow"><label class="fl">Fecha</label><input type="date" id="mv-fecha"></div>
+      <div class="frow"><label class="fl">Tipo</label><select id="mv-tipo"><option value="compra">Compra</option><option value="venta">Venta</option></select></div>
+    </div>
+    <div class="fg2">
+      <div class="frow"><label class="fl">Categoría</label>
+        <select id="mv-categoria"><option value="crypto">Crypto</option><option value="etf">ETF / Indexado</option><option value="accion">Acción</option><option value="bono">Bono</option><option value="otro">Otro</option></select>
+      </div>
+      <div class="frow"><label class="fl">Nombre del activo</label><div class="iuwu"><input type="text" id="mv-nombre" placeholder="ej. BTC, iShares SP500..."></div></div>
+    </div>
+    <div class="fg3">
+      <div class="frow"><label class="fl">Cantidad</label><div class="iuwu"><input type="number" id="mv-cantidad" step="any"><div class="unit">unid.</div></div></div>
+      <div class="frow"><label class="fl">TC EUR/USD</label><div class="iuwu"><input type="number" id="mv-tc" step="0.001" oninput="calcMovUSD()"><div class="unit">USD/€</div></div></div>
+      <div></div>
+    </div>
+    <div class="fg2">
+      <div class="frow"><label class="fl">Monto en euros</label><div class="iuwu"><input type="number" id="mv-eur" oninput="calcMovUSD()"><div class="unit">€</div></div></div>
+      <div class="frow"><label class="fl">Monto en USD (calculado)</label><div class="iuwu"><input type="number" id="mv-usd"><div class="unit">USD</div></div></div>
+    </div>
+    <div style="margin-top:1.25rem;display:flex;gap:8px">
+      <button class="btn-p" onclick="guardarMov()">Guardar</button>
+      <button class="btn" onclick="limpiarFormMov()">Limpiar</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="sec">Importar varios (CSV)</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:10px">Formato: <code>fecha,nombre,cantidad,tc_eur_usd,monto_eur,monto_usd,tipo</code></p>
+    <textarea id="mv-csv" rows="5" placeholder="2026-02-25,BTC,0.02111,1.17,1243.05,1454.37,compra"></textarea>
+    <button class="btn" style="margin-top:8px" onclick="importarCSV()">Importar CSV</button>
+  </div>
+</div>
+
+<!-- CARGAR EFECTIVO -->
+<div id="page-cargar-ef" class="page">
+  <div class="page-header"><div class="page-title">Movimiento de efectivo</div></div>
+  <div id="alert-ef"></div>
+  <div class="card">
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Registrá entradas o salidas de billetes físicos. No afectan el ahorro mensual.</p>
+    <div class="fg2">
+      <div class="frow"><label class="fl">Fecha</label><input type="date" id="ef-fecha"></div>
+      <div class="frow"><label class="fl">Bolsa</label>
+        <select id="ef-bolsa" onchange="document.getElementById('ef-unit').textContent=this.value==='efEur'?'€':'USD'">
+          <option value="efEur">Efectivo € (billetes euros)</option>
+          <option value="efUsd">Efectivo USD (billetes dólares)</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg2">
+      <div class="frow"><label class="fl">Tipo</label>
+        <select id="ef-tipo">
+          <option value="entrada">Entrada (retiro de cuenta, cambio)</option>
+          <option value="salida">Salida (depósito a cuenta, gasto, cambio)</option>
+        </select>
+      </div>
+      <div class="frow"><label class="fl">Monto</label>
+        <div class="iuwu"><input type="number" id="ef-monto" placeholder="0" step="any"><div class="unit" id="ef-unit">€</div></div>
+      </div>
+    </div>
+    <div class="frow"><label class="fl">Nota</label><div class="iuwu"><input type="text" id="ef-nota" placeholder="ej. Retiro de cuenta para Argentina"></div></div>
+    <div style="margin-top:1.25rem;display:flex;gap:8px">
+      <button class="btn-p" onclick="guardarEfectivo()">Guardar</button>
+      <button class="btn" onclick="limpiarFormEf()">Limpiar</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="sec">Historial</div>
+    <div class="overflow-x"><table style="min-width:480px">
+      <thead><tr><th>Fecha</th><th>Bolsa</th><th>Tipo</th><th style="text-align:right">Monto</th><th>Nota</th><th></th></tr></thead>
+      <tbody id="tbody-ef"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- CARGAR DEUDA -->
+<div id="page-cargar-deuda" class="page">
+  <div class="page-header"><div class="page-title">Registrar deuda</div></div>
+  <div id="alert-deuda"></div>
+  <div class="card">
+    <div class="fg2">
+      <div class="frow"><label class="fl">Persona</label><div class="iuwu"><input type="text" id="deu-persona" placeholder="Nombre"></div></div>
+      <div class="frow"><label class="fl">Fecha</label><input type="date" id="deu-fecha"></div>
+    </div>
+    <div class="fg2">
+      <div class="frow"><label class="fl">Tipo</label><select id="deu-tipo"><option value="cobrar">Me deben (a cobrar)</option><option value="pagar">Debo (a pagar)</option></select></div>
+      <div class="frow"><label class="fl">Monto USD</label><div class="iuwu"><input type="number" id="deu-monto"><div class="unit">USD</div></div></div>
+    </div>
+    <div class="frow"><label class="fl">Nota</label><div class="iuwu"><input type="text" id="deu-nota" placeholder="Descripción opcional"></div></div>
+    <div style="margin-top:1.25rem;display:flex;gap:8px">
+      <button class="btn-p" onclick="guardarDeuda()">Guardar</button>
+      <button class="btn" onclick="nav('deudas',null)">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIG -->
+<div id="page-config" class="page">
+  <div class="page-header"><div class="page-title">Configuración</div></div>
+  <div class="card">
+    <div class="sec">Tipos de cambio actuales</div>
+    <div class="fg2">
+      <div class="frow"><label class="fl">TC EUR/USD actual</label><div class="iuwu"><input type="number" id="cfg-tc-eur" step="0.001"><div class="unit">USD/€</div></div></div>
+      <div class="frow"><label class="fl">TC ARS/USD actual</label><div class="iuwu"><input type="number" id="cfg-tc-ars" step="1"><div class="unit">ARS/$</div></div></div>
+    </div>
+    <div style="margin-top:1rem"><button class="btn-p" onclick="guardarConfig()">Guardar</button></div>
+  </div>
+  <div class="card">
+    <div class="sec">Saldos iniciales</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Se usan como punto de partida si no hay meses cargados.</p>
+    <div class="fg3">
+      <div class="frow"><label class="fl">Cuenta € inicial</label><div class="iuwu"><input type="number" id="cfg-saldo-ini-eur"><div class="unit">€</div></div></div>
+      <div class="frow"><label class="fl">Efectivo € inicial</label><div class="iuwu"><input type="number" id="cfg-ef-ini-eur"><div class="unit">€</div></div></div>
+      <div class="frow"><label class="fl">Efectivo USD inicial</label><div class="iuwu"><input type="number" id="cfg-ef-ini-usd"><div class="unit">USD</div></div></div>
+    </div>
+    <div style="margin-top:1rem"><button class="btn-p" onclick="guardarConfig()">Guardar</button></div>
+  </div>
+  <div class="card">
+    <div class="sec">Imagen fija mensual estimada</div>
+    <div class="fg2">
+      <div class="frow"><label class="fl">Ingreso mensual fijo (€)</label><div class="iuwu"><input type="number" id="cfg-ing-fijo"><div class="unit">€</div></div></div>
+      <div class="frow"><label class="fl">Gasto fijo mensual estimado (€)</label><div class="iuwu"><input type="number" id="cfg-gasto-fijo"><div class="unit">€</div></div></div>
+    </div>
+    <div class="fg2">
+      <div class="frow"><label class="fl">Inversión mensual estimada (€)</label><div class="iuwu"><input type="number" id="cfg-inv-fija"><div class="unit">€</div></div></div>
+      <div class="frow"><label class="fl">TC EUR/USD de referencia</label><div class="iuwu"><input type="number" id="cfg-tc-ref" step="0.001"><div class="unit">USD/€</div></div></div>
+    </div>
+    <div style="margin-top:1rem"><button class="btn-p" onclick="guardarConfig()">Guardar</button></div>
+  </div>
+  <div class="card">
+    <div class="sec">PIN de acceso</div>
+    <div class="fg2">
+      <div class="frow"><label class="fl">Cambiar PIN (4 dígitos)</label><div class="iuwu"><input type="password" id="cfg-pin-nuevo" maxlength="4" inputmode="numeric" placeholder="••••"><div class="unit">PIN</div></div></div>
+      <div class="frow"><label class="fl">Confirmar PIN</label><div class="iuwu"><input type="password" id="cfg-pin-conf" maxlength="4" inputmode="numeric" placeholder="••••"><div class="unit">PIN</div></div></div>
+    </div>
+    <div style="margin-top:1rem"><button class="btn-p" onclick="cambiarPin()">Guardar PIN</button></div>
+    <div id="alert-pin" style="margin-top:8px"></div>
+  </div>
+  <div class="card">
+    <div class="sec">Datos</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="exportarDatos()"><i class="ti ti-download"></i> Exportar JSON</button>
+      <button class="btn" onclick="document.getElementById('import-file').click()"><i class="ti ti-upload"></i> Importar JSON</button>
+      <button class="btn-danger" onclick="resetearDatos()">Borrar todo</button>
+    </div>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDatos(this)">
+  </div>
+</div>
+
+</div></div>
+
+<script>
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbyL4eRvvOwvA2T6Mki_Xl75kdTo6vOkImQxU7qA9T2jp8X73MRKa0i9vQ6bGJykvDDYyg/exec';
+const SK='finanzas_v3';
+let DB={
+  meses:[],movimientos:[],efectivo:[],deudas:[],precios:[],
+  config:{tcEur:1.16,tcArs:1200,saldoIniEur:0,efIniEur:0,efIniUsd:0,ingFijo:2386,gastoFijo:1300,invFija:500,tcRef:1.16},
+  pin:'1234'
+};
+let evoChartInst=null,syncTimer=null,editMes=null;
+
+// ── SYNC ────────────────────────────────────────────────
+function setSyncStatus(s,m){
+  const el=document.getElementById('sync-status');
+  el.className='sync-status sync-'+s;
+  el.innerHTML=`<i class="ti ti-${s==='ok'?'cloud-check':s==='err'?'cloud-off':'cloud'}"></i><span>${m}</span>`;
+}
+async function loadFromSheet(){
+  try{
+    setSyncStatus('loading','Cargando...');
+    const r=await fetch(SCRIPT_URL+'?t='+Date.now());
+    const text=await r.text();
+    if(text&&text!=='{}'){const p=JSON.parse(text);if(p&&!p.error){DB=p;if(!DB.precios)DB.precios=[];if(!DB.efectivo)DB.efectivo=[];if(!DB.pin)DB.pin='1234';}}
+    try{localStorage.setItem(SK,JSON.stringify(DB));}catch(e){}
+    setSyncStatus('ok','Sincronizado');
+  }catch(e){
+    setSyncStatus('err','Sin conexión');
+    try{const c=localStorage.getItem(SK);if(c){DB=JSON.parse(c);if(!DB.precios)DB.precios=[];if(!DB.efectivo)DB.efectivo=[];if(!DB.pin)DB.pin='1234';}}catch(e2){}
+  }
+}
+async function saveToSheet(){
+  try{
+    setSyncStatus('loading','Guardando...');
+    const body=JSON.stringify(DB);
+    try{localStorage.setItem(SK,body);}catch(e){}
+    await fetch(SCRIPT_URL,{method:'POST',body});
+    setSyncStatus('ok','Guardado');
+  }catch(e){setSyncStatus('err','Error al guardar');}
+}
+function debouncedSave(){clearTimeout(syncTimer);syncTimer=setTimeout(saveToSheet,600);}
+async function syncNow(){await loadFromSheet();renderCurrentPage();}
+
+// ── LOGIN ───────────────────────────────────────────────
+function pinNext(el,nextId){if(el.value.length===1)document.getElementById(nextId).focus();}
+function pinSubmit(){
+  const pin=[1,2,3,4].map(i=>document.getElementById('p'+i).value).join('');
+  if(pin.length<4)return;
+  if(pin===DB.pin){
+    document.getElementById('loginBox').style.display='none';
+    document.getElementById('appRoot').style.opacity='1';
+  } else {
+    document.getElementById('loginErr').textContent='PIN incorrecto';
+    [1,2,3,4].forEach(i=>{document.getElementById('p'+i).value='';});
+    document.getElementById('p1').focus();
+    setTimeout(()=>document.getElementById('loginErr').textContent='',2000);
+  }
+}
+async function initLogin(){
+  document.getElementById('loading').style.display='flex';
+  await loadFromSheet();
+  document.getElementById('loading').style.display='none';
+  document.getElementById('loginBox').style.display='flex';
+  document.getElementById('p1').focus();
+  renderDash();
+}
+function cambiarPin(){
+  const n=document.getElementById('cfg-pin-nuevo').value;
+  const c=document.getElementById('cfg-pin-conf').value;
+  if(n.length!==4||!/^\d{4}$/.test(n)){showAlert('alert-pin','El PIN debe tener exactamente 4 dígitos','err');return;}
+  if(n!==c){showAlert('alert-pin','Los PINs no coinciden','err');return;}
+  DB.pin=n;debouncedSave();showAlert('alert-pin','PIN actualizado','ok');
+  document.getElementById('cfg-pin-nuevo').value='';document.getElementById('cfg-pin-conf').value='';
+}
+
+// ── HELPERS ─────────────────────────────────────────────
+function fmt(n,d=0){return'$'+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function fmtE(n){return'€'+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function fmtM(n,cur){return(cur==='USD'?'$':'€')+Math.abs(Number(n||0)).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function pct(n,dec=1){const v=Number(n||0);return(v>=0?'+':'')+v.toFixed(dec)+'%';}
+function mesLabel(ym){const[y,m]=ym.split('-');const ms=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return ms[parseInt(m)-1]+' '+y;}
+
+function nav(page,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(el&&el.classList&&el.classList.contains('nav-item'))el.classList.add('active');
+  renderCurrentPage();
+}
+function renderCurrentPage(){
+  const id=(document.querySelector('.page.active')||{}).id||'';
+  const p=id.replace('page-','');
+  if(p==='dashboard')renderDash();
+  else if(p==='liquidez')renderLiquidez();
+  else if(p==='mensual')renderMensual();
+  else if(p==='inversiones')renderInv();
+  else if(p==='deudas')renderDeudas();
+  else if(p==='cargar-ef')renderTablaEf();
+  else if(p==='config')loadConfig();
+}
+function switchTab(btn,tabId){
+  const page=btn.closest('.page');
+  page.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  page.querySelectorAll('[id^="mtab-"],[id^="itab-"],[id^="dtab-"]').forEach(t=>t.style.display='none');
+  const target=document.getElementById(tabId);
+  if(target)target.style.display='block';
+  if(tabId==='itab-precios')renderTablaPrecios();
+}
+function showAlert(id,msg,type){
+  const el=document.getElementById(id);if(!el)return;
+  el.innerHTML=`<div class="alert alert-${type==='ok'?'ok':'err'}">${msg}</div>`;
+  setTimeout(()=>{if(el)el.innerHTML='';},4000);
+}
+
+// ── PRECIOS HISTÓRICOS ───────────────────────────────────
+function getPrecio(nombre,fecha){
+  // Busca el precio más reciente para ese activo en o antes de la fecha dada
+  const relevant=(DB.precios||[]).filter(p=>p.activo===nombre&&p.fecha<=fecha);
+  if(!relevant.length)return null;
+  relevant.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  return relevant[0].precio;
+}
+function getPrecioMes(nombre,yearMonth){
+  // yearMonth = 'YYYY-MM', busca el cierre del último día de ese mes
+  const relevant=(DB.precios||[]).filter(p=>p.activo===nombre&&p.fecha.substring(0,7)===yearMonth);
+  if(relevant.length){relevant.sort((a,b)=>b.fecha.localeCompare(a.fecha));return relevant[0].precio;}
+  // si no hay exacto, busca el más reciente anterior
+  const anterior=(DB.precios||[]).filter(p=>p.activo===nombre&&p.fecha<yearMonth+'-01');
+  if(!anterior.length)return null;
+  anterior.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  return anterior[0].precio;
+}
+
+function importarPrecios(){
+  const raw=document.getElementById('precios-csv').value.trim();
+  if(!raw)return;
+  let ok=0,err=0;
+  raw.split('\n').forEach(line=>{
+    line=line.trim();if(!line)return;
+    const p=line.split(',').map(s=>s.trim());
+    if(p.length<3){err++;return;}
+    const[activo,fecha,precio]=p;
+    if(!activo||!fecha||!precio){err++;return;}
+    // Sobreescribir si ya existe
+    const idx=(DB.precios||[]).findIndex(x=>x.activo===activo&&x.fecha===fecha);
+    if(idx>=0)DB.precios[idx]={activo,fecha,precio:parseFloat(precio)};
+    else{if(!DB.precios)DB.precios=[];DB.precios.push({activo,fecha,precio:parseFloat(precio)});}
+    ok++;
+  });
+  DB.precios.sort((a,b)=>a.activo.localeCompare(b.activo)||a.fecha.localeCompare(b.fecha));
+  debouncedSave();
+  showAlert('alert-precios',`${ok} precios importados${err?' · '+err+' errores':''}`,err&&!ok?'err':'ok');
+  document.getElementById('precios-csv').value='';
+  renderTablaPrecios();
+}
+function renderTablaPrecios(){
+  const tbody=document.getElementById('tbody-precios');
+  if(!DB.precios||!DB.precios.length){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text3)">Sin precios cargados</td></tr>';return;}
+  const sorted=[...DB.precios].sort((a,b)=>b.fecha.localeCompare(a.fecha)||a.activo.localeCompare(b.activo));
+  tbody.innerHTML=sorted.map((p,i)=>{
+    const idx=DB.precios.indexOf(p);
+    return`<tr><td>${p.activo}</td><td>${p.fecha}</td><td style="text-align:right">${fmt(p.precio)}</td><td><button class="btn-danger" onclick="borrarPrecio(${idx})">✕</button></td></tr>`;
+  }).join('');
+}
+function borrarPrecio(idx){DB.precios.splice(idx,1);debouncedSave();renderTablaPrecios();}
+
+// ── MOTOR DE INVERSIONES ─────────────────────────────────
+function calcPosiciones(){
+  const movs=[...DB.movimientos].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const estado={};
+  const cerradas=[];
+  const rentAnual={};
+
+  movs.forEach(m=>{
+    const nombre=m.nombre||m.producto||'?';
+    const tipo=(m.tipo||'').toLowerCase();
+    const cantidad=Number(m.cantidad);
+    const montoUSD=Number(m.montoUSD);
+    const anio=m.fecha.substring(0,4);
+    if(!rentAnual[anio])rentAnual[anio]={anio,realizadoUSD:0,comprasUSD:0,ventasUSD:0};
+
+    if(tipo==='compra'){
+      rentAnual[anio].comprasUSD+=montoUSD;
+      if(!estado[nombre]){
+        estado[nombre]={nombre,categoria:m.categoria||'otro',cantidad,costoTotalUSD:montoUSD,fechaApertura:m.fecha,resultadoParcialUSD:0,cantidadVendidaUSD:0};
+      } else {
+        estado[nombre].cantidad+=cantidad;
+        estado[nombre].costoTotalUSD+=montoUSD;
+      }
+    } else {
+      rentAnual[anio].ventasUSD+=montoUSD;
+      if(!estado[nombre])return;
+      const pos=estado[nombre];
+      const precioPromUSD=pos.cantidad>0?pos.costoTotalUSD/pos.cantidad:0;
+      const costoVendidoUSD=precioPromUSD*cantidad;
+      const resultadoUSD=montoUSD-costoVendidoUSD;
+      rentAnual[anio].realizadoUSD+=resultadoUSD;
+      const cantidadRestante=pos.cantidad-cantidad;
+      if(cantidadRestante<=0.000001){
+        cerradas.push({
+          nombre:pos.nombre,categoria:pos.categoria,
+          costoUSD:pos.costoTotalUSD,
+          ventaUSD:montoUSD+(pos.cantidadVendidaUSD||0),
+          resultado:resultadoUSD+(pos.resultadoParcialUSD||0),
+          anio,fechaApertura:pos.fechaApertura,fechaCierre:m.fecha
+        });
+        delete estado[nombre];
+      } else {
+        pos.cantidad=cantidadRestante;
+        pos.costoTotalUSD-=costoVendidoUSD;
+        pos.cantidadVendidaUSD=(pos.cantidadVendidaUSD||0)+montoUSD;
+        pos.resultadoParcialUSD=(pos.resultadoParcialUSD||0)+resultadoUSD;
+      }
+    }
+  });
+
+  // Calcular variación no realizada por año usando precios históricos
+  // Para cada año, calcular el valor al inicio y fin del año de posiciones abiertas en ese momento
+  // Simplificado: sumar variación anual a rentAnual
+  const rentAnualArr=Object.values(rentAnual).sort((a,b)=>b.anio-a.anio);
+
+  return{abiertas:Object.values(estado),cerradas,rentAnual:rentAnualArr};
+}
+
+function calcValorInvHoy(){
+  const c=DB.config;
+  const{abiertas}=calcPosiciones();
+  let total=0;
+  abiertas.forEach(p=>{
+    const precio=getPrecio(p.nombre,new Date().toISOString().slice(0,10));
+    if(precio)total+=p.cantidad*precio;
+    // si no hay precio histórico, usamos costo como fallback
+    else total+=p.costoTotalUSD;
+  });
+  return total;
+}
+
+function calcValorInvEnFecha(yearMonth){
+  // Calcula el valor de todas las posiciones abiertas al cierre de un mes
+  const mesEnd=yearMonth+'-31';// aproximación
+  const movs=[...DB.movimientos].filter(m=>m.fecha<=mesEnd).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const estado={};
+  movs.forEach(m=>{
+    const nombre=m.nombre||m.producto||'?';
+    const tipo=(m.tipo||'').toLowerCase();
+    const cantidad=Number(m.cantidad);
+    const montoUSD=Number(m.montoUSD);
+    if(tipo==='compra'){
+      if(!estado[nombre])estado[nombre]={nombre,cantidad,costoTotalUSD:montoUSD};
+      else{estado[nombre].cantidad+=cantidad;estado[nombre].costoTotalUSD+=montoUSD;}
+    } else {
+      if(!estado[nombre])return;
+      const pos=estado[nombre];
+      const resto=pos.cantidad-cantidad;
+      if(resto<=0.000001)delete estado[nombre];
+      else{const pp=pos.costoTotalUSD/pos.cantidad;pos.cantidad=resto;pos.costoTotalUSD-=pp*cantidad;}
+    }
+  });
+  let total=0;
+  Object.values(estado).forEach(p=>{
+    const precio=getPrecioMes(p.nombre,yearMonth);
+    total+=precio?p.cantidad*precio:p.costoTotalUSD;
+  });
+  return total;
+}
+
+// ── EFECTIVO ─────────────────────────────────────────────
+function calcEfectivo(){
+  const c=DB.config;
+  let efEur=c.efIniEur||0,efUsd=c.efIniUsd||0;
+  (DB.efectivo||[]).forEach(m=>{
+    const sign=m.tipo==='entrada'?1:-1;
+    if(m.bolsa==='efEur')efEur+=sign*Number(m.monto);
+    else efUsd+=sign*Number(m.monto);
+  });
+  return{efEur,efUsd,totalUSD:efEur*(DB.config.tcEur||1)+efUsd};
+}
+function calcCuentaEur(){
+  const c=DB.config;
+  if(DB.meses.length){const u=DB.meses[DB.meses.length-1];return{saldoEur:u.saldoEur||0,mes:u.mes};}
+  return{saldoEur:c.saldoIniEur||0,mes:'inicial'};
+}
+
+// ── PATRIMONIO ───────────────────────────────────────────
+function calcPatrimonio(){
+  const c=DB.config;
+  const cuenta=calcCuentaEur();
+  const ef=calcEfectivo();
+  const cuentaUSD=cuenta.saldoEur*(c.tcEur||1);
+  const liquidezUSD=cuentaUSD+ef.totalUSD;
+  const invUSD=calcValorInvHoy();
+  const cobrar=(DB.deudas||[]).filter(d=>d.tipo==='cobrar'&&!d.pagada).reduce((a,d)=>a+d.monto,0);
+  const pagar=(DB.deudas||[]).filter(d=>d.tipo==='pagar'&&!d.pagada).reduce((a,d)=>a+d.monto,0);
+  return{cuentaUSD,ef,liquidezUSD,invUSD,cobrar,pagar,total:liquidezUSD+invUSD+cobrar-pagar};
+}
+
+// ── TABLERO ──────────────────────────────────────────────
+function bar(label,ratio,val,color){
+  const w=Math.max(0,Math.min(100,Math.round((ratio||0)*100)));
+  return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px">
+    <div style="width:85px;color:var(--text2);text-align:right;flex-shrink:0">${label}</div>
+    <div style="flex:1;height:20px;background:var(--bg2);border-radius:3px;overflow:hidden">
+      <div style="width:${w}%;height:100%;background:${color};border-radius:3px;display:flex;align-items:center;padding-left:6px;min-width:${w>0?'4px':'0'}">
+        ${w>20?`<span style="font-size:11px;font-weight:500;color:white;white-space:nowrap">${val}</span>`:''}
+      </div>
+    </div>
+    ${w<=20?`<span style="font-size:11px;color:var(--text2)">${val}</span>`:''}
+  </div>`;
+}
+
+function renderDash(){
+  const p=calcPatrimonio();
+  document.getElementById('dash-fecha').textContent=new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('dash-metrics').innerHTML=`
+    <div class="mc"><div class="mc-label">Patrimonio total</div><div class="mc-value">${fmt(p.total)}</div><div class="mc-sub">valorizado hoy en USD</div></div>
+    <div class="mc"><div class="mc-label">Liquidez</div><div class="mc-value">${fmt(p.liquidezUSD)}</div><div class="mc-sub">cuenta + efectivo</div></div>
+    <div class="mc"><div class="mc-label">Inversiones</div><div class="mc-value">${fmt(p.invUSD)}</div><div class="mc-sub">posiciones abiertas</div></div>
+    <div class="mc"><div class="mc-label">Deudas netas</div><div class="mc-value" style="color:var(--${p.cobrar-p.pagar>=0?'success':'danger'})">${fmt(p.cobrar-p.pagar)}</div><div class="mc-sub">a cobrar − a pagar</div></div>`;
+
+  const maxV=Math.max(p.cuentaUSD,p.ef.efEur*(DB.config.tcEur||1),p.ef.efUsd,p.invUSD,p.cobrar,1);
+  document.getElementById('dash-desglose').innerHTML=
+    bar('Cuenta €',p.cuentaUSD/maxV,fmt(p.cuentaUSD),'#378ADD')+
+    bar('Efectivo €',(p.ef.efEur*(DB.config.tcEur||1))/maxV,fmt(p.ef.efEur*(DB.config.tcEur||1)),'#5B9FD4')+
+    bar('Efectivo USD',p.ef.efUsd/maxV,fmt(p.ef.efUsd),'#85B7EB')+
+    bar('Inversiones',p.invUSD/maxV,fmt(p.invUSD),'#1D9E75')+
+    bar('A cobrar',p.cobrar/maxV,fmt(p.cobrar),'#B5D4F4');
+
+  const ultimo=DB.meses.length?DB.meses[DB.meses.length-1]:null;
+  if(ultimo){
+    const tcE=ultimo.tcEur||1,tcA=ultimo.tcArs||1;
+    const ingUSD=((ultimo.ingEur||0)+(ultimo.ingOtros||0))*tcE;
+    const gasUSD=(ultimo.gastoArs||0)/(tcA||1)+(ultimo.gastoEur||0)*tcE;
+    const aho=ingUSD-gasUSD;
+    const tasa=ingUSD>0?Math.round(aho/ingUSD*100):0;
+    document.getElementById('dash-ultimo-mes').innerHTML=`
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px">${mesLabel(ultimo.mes)}</div>
+      <div class="row-item"><span class="rl">Ingresos</span><span class="rv" style="color:var(--success)">${fmt(ingUSD)}</span></div>
+      <div class="row-item"><span class="rl">Gastos totales</span><span class="rv" style="color:var(--danger)">${fmt(gasUSD)}</span></div>
+      <div class="row-item"><span class="rl">Ahorro</span><span class="rv" style="color:var(--${aho>=0?'success':'danger'})">${fmt(aho)}</span></div>
+      <div style="margin-top:10px"><div style="font-size:11px;color:var(--text2)">Tasa de ahorro: ${tasa}%</div>
+      <div class="prog-wrap"><div class="prog-fill" style="width:${Math.max(0,Math.min(100,tasa))}%;background:${tasa>=0?'#1D9E75':'#D85A30'}"></div></div></div>`;
+  } else {
+    document.getElementById('dash-ultimo-mes').innerHTML='<div class="empty">Cargá tu primer mes</div>';
+  }
+
+  // Gráfico de evolución patrimonial
+  const sorted=[...DB.meses].sort((a,b)=>a.mes.localeCompare(b.mes));
+  const labels=sorted.map(m=>mesLabel(m.mes));
+  const c=DB.config;
+  const valsLiq=sorted.map(m=>Math.round((m.saldoEur||0)*(m.tcEur||1)));
+  const valsInv=sorted.map(m=>Math.round(calcValorInvEnFecha(m.mes)));
+  const valsTotal=sorted.map((m,i)=>valsLiq[i]+valsInv[i]);
+
+  const ctx=document.getElementById('evoChart').getContext('2d');
+  if(evoChartInst)evoChartInst.destroy();
+  const isDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const tc2=isDark?'#636366':'#888',bc=isDark?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.06)';
+  evoChartInst=new Chart(ctx,{type:'line',data:{labels,datasets:[
+    {label:'Patrimonio total',data:valsTotal,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.07)',tension:0.35,fill:true,pointRadius:3,pointBackgroundColor:'#1D9E75'},
+    {label:'Liquidez',data:valsLiq,borderColor:'#378ADD',backgroundColor:'transparent',tension:0.35,pointRadius:2,borderDash:[4,3]},
+    {label:'Inversiones',data:valsInv,borderColor:'#F0A500',backgroundColor:'transparent',tension:0.35,pointRadius:2,borderDash:[4,3]}
+  ]},options:{responsive:true,plugins:{legend:{display:true,labels:{font:{size:11},color:tc2,boxWidth:12}},tooltip:{callbacks:{label:c=>'$'+c.parsed.y.toLocaleString()}}},scales:{x:{grid:{color:bc},ticks:{color:tc2,font:{size:10}}},y:{grid:{color:bc},ticks:{color:tc2,font:{size:10},callback:v=>'$'+v.toLocaleString()}}}}});
+}
+
+// ── LIQUIDEZ ─────────────────────────────────────────────
+function renderLiquidez(){
+  const p=calcPatrimonio();
+  const c=DB.config;
+  document.getElementById('liq-metrics').innerHTML=`
+    <div class="mc"><div class="mc-label">Liquidez total</div><div class="mc-value">${fmt(p.liquidezUSD)}</div><div class="mc-sub">cuenta + efectivo</div></div>
+    <div class="mc"><div class="mc-label">Cuenta €</div><div class="mc-value">${fmt(p.cuentaUSD)}</div><div class="mc-sub">${fmtE(p.cuentaUSD/(c.tcEur||1))} × ${c.tcEur}</div></div>
+    <div class="mc"><div class="mc-label">Efectivo físico</div><div class="mc-value">${fmt(p.ef.totalUSD)}</div><div class="mc-sub">${fmtE(p.ef.efEur)} + ${fmt(p.ef.efUsd)} USD</div></div>`;
+
+  const sorted=[...DB.meses].sort((a,b)=>b.mes.localeCompare(a.mes));
+  if(!sorted.length){document.getElementById('liq-cuenta-eur').innerHTML='<div class="empty">Sin meses cargados</div>';}
+  else{
+    let html='<table><thead><tr><th>Mes</th><th style="text-align:right">Saldo €</th><th style="text-align:right">Equiv. USD</th></tr></thead><tbody>';
+    sorted.slice(0,12).forEach(m=>{html+=`<tr><td>${mesLabel(m.mes)}</td><td style="text-align:right">${fmtE(m.saldoEur||0)}</td><td style="text-align:right;color:var(--text2)">${fmt((m.saldoEur||0)*(m.tcEur||1))}</td></tr>`;});
+    html+='</tbody></table>';
+    document.getElementById('liq-cuenta-eur').innerHTML=html;
+  }
+
+  const ef=calcEfectivo();
+  const movEf=[...(DB.efectivo||[])].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  let htmlEf=`
+    <div class="row-item"><span class="rl">Efectivo € (billetes)</span><span class="rv">${fmtE(ef.efEur)}</span></div>
+    <div class="row-item" style="margin-bottom:10px"><span class="rl">Efectivo USD (billetes)</span><span class="rv">${fmt(ef.efUsd)}</span></div>`;
+  if(movEf.length){
+    htmlEf+='<div class="sec" style="margin-top:10px">Últimos movimientos</div>';
+    movEf.slice(0,8).forEach(m=>{
+      const cur=m.bolsa==='efEur'?'€':'USD';
+      const sign=m.tipo==='entrada'?'+':'-';
+      const color=m.tipo==='entrada'?'var(--success)':'var(--danger)';
+      htmlEf+=`<div class="row-item"><span style="font-size:12px">${m.fecha} <span style="color:var(--text3)">${m.bolsa==='efEur'?'Ef. €':'Ef. USD'}</span>${m.nota?` — ${m.nota}`:''}</span><span class="rv" style="color:${color}">${sign}${fmtM(m.monto,cur)} ${cur}</span></div>`;
+    });
+  }
+  document.getElementById('liq-efectivo').innerHTML=htmlEf;
+}
+
+// ── MES A MES ────────────────────────────────────────────
+function renderMensual(){
+  const sorted=[...DB.meses].sort((a,b)=>b.mes.localeCompare(a.mes));
+  const tbody=document.getElementById('tbody-mensual');
+  if(!sorted.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px">No hay meses cargados</td></tr>';return;}
+  tbody.innerHTML=sorted.map(m=>{
+    const tcE=m.tcEur||1,tcA=m.tcArs||1;
+    const ingUSD=((m.ingEur||0)+(m.ingOtros||0))*tcE;
+    const gasEurUSD=(m.gastoEur||0)*tcE;
+    const gasArsUSD=(m.gastoArs||0)/(tcA||1);
+    const gasTotal=gasEurUSD+gasArsUSD;
+    const aho=ingUSD-gasTotal;
+    return`<tr class="editable-row" onclick="editarMes('${m.mes}')">
+      <td>${mesLabel(m.mes)}</td>
+      <td style="text-align:right;color:var(--success)">${fmt(ingUSD)}</td>
+      <td style="text-align:right;color:var(--danger)">${fmt(gasEurUSD)}</td>
+      <td style="text-align:right;color:var(--danger)">${fmt(gasArsUSD)}</td>
+      <td style="text-align:right;color:var(--danger)">${fmt(gasTotal)}</td>
+      <td style="text-align:right;font-weight:500;color:var(--${aho>=0?'success':'danger'})">${fmt(aho)}</td>
+      <td style="text-align:right;color:var(--text2)">${tcE.toFixed(3)}</td>
+      <td style="color:var(--text3);font-size:12px">${m.comentario||''}</td>
+    </tr>`;
+  }).join('');
+
+  const c=DB.config,tcE=c.tcRef||1.16;
+  const ingFijoUSD=(c.ingFijo||0)*tcE,gastoFijoUSD=(c.gastoFijo||0)*tcE,invUSD=(c.invFija||0)*tcE;
+  const ahoEst=ingFijoUSD-gastoFijoUSD-invUSD;
+  document.getElementById('imagen-fija').innerHTML=`
+    <div class="row-item"><span class="rl">Ingresos fijos estimados</span><span class="rv" style="color:var(--success)">${fmt(ingFijoUSD)}</span></div>
+    <div class="row-item"><span class="rl">Gastos fijos estimados</span><span class="rv" style="color:var(--danger)">-${fmt(gastoFijoUSD)}</span></div>
+    <div class="row-item"><span class="rl">Inversión mensual estimada</span><span class="rv" style="color:var(--info)">-${fmt(invUSD)}</span></div>
+    <div class="row-item"><span class="rl" style="font-weight:500">Ahorro estimado</span><span class="rv" style="font-size:16px;color:var(--${ahoEst>=0?'success':'danger'})">${fmt(ahoEst)}</span></div>`;
+}
+
+function editarMes(mes){
+  const m=DB.meses.find(x=>x.mes===mes);if(!m)return;
+  editMes=mes;
+  document.getElementById('form-mes-titulo').textContent='Editar mes — '+mesLabel(mes);
+  document.getElementById('m-mes').value=mes;
+  document.getElementById('m-tc-eur').value=m.tcEur||'';
+  document.getElementById('m-tc-ars').value=m.tcArs||'';
+  document.getElementById('m-ing-eur').value=m.ingEur||'';
+  document.getElementById('m-ing-otros').value=m.ingOtros||'';
+  document.getElementById('m-gasto-eur').value=m.gastoEur||'';
+  document.getElementById('m-gasto-ars').value=m.gastoArs||'';
+  document.getElementById('m-saldo-eur').value=m.saldoEur||'';
+  document.getElementById('m-comentario').value=m.comentario||'';
+  document.getElementById('btn-borrar-mes').style.display='inline-block';
+  nav('cargar-mes',document.querySelector('.nav-item:nth-child(7)'));
+}
+
+function borrarMes(){
+  if(!editMes||!confirm('¿Borrar el mes '+mesLabel(editMes)+'? No se puede deshacer.'))return;
+  DB.meses=DB.meses.filter(m=>m.mes!==editMes);
+  debouncedSave();limpiarFormMes();
+  showAlert('alert-mes','Mes borrado','ok');
+  nav('mensual',document.querySelector('.nav-item:nth-child(4)'));
+}
+
+// ── INVERSIONES ──────────────────────────────────────────
+function renderInv(){
+  const{abiertas,cerradas,rentAnual}=calcPosiciones();
+  const c=DB.config;
+
+  const totComp=(DB.movimientos||[]).filter(m=>(m.tipo||'').toLowerCase()==='compra').reduce((a,m)=>a+Number(m.montoUSD),0);
+  const totRealizado=rentAnual.reduce((a,r)=>a+r.realizadoUSD,0);
+  const valorAbiertas=calcValorInvHoy();
+  const noRealizado=valorAbiertas-abiertas.reduce((a,p)=>a+p.costoTotalUSD,0);
+  const rentTotal=totComp>0?((totRealizado+noRealizado)/totComp*100):0;
+
+  document.getElementById('inv-metrics').innerHTML=`
+    <div class="mc"><div class="mc-label">Total invertido (histórico)</div><div class="mc-value">${fmt(totComp)}</div></div>
+    <div class="mc"><div class="mc-label">Valor posiciones abiertas</div><div class="mc-value">${fmt(valorAbiertas)}</div></div>
+    <div class="mc"><div class="mc-label">Rentabilidad total</div><div class="mc-value" style="color:var(--${rentTotal>=0?'success':'danger'})">${pct(rentTotal)}</div><div class="mc-sub">realizado + no realizado</div></div>`;
+
+  // Posiciones abiertas
+  let htmlAb='';
+  if(!abiertas.length){htmlAb='<div class="empty">No hay posiciones abiertas</div>';}
+  else{
+    htmlAb='<table style="min-width:600px"><thead><tr><th>Activo</th><th style="text-align:right">Cantidad</th><th style="text-align:right">Entrada prom.</th><th style="text-align:right">Precio actual</th><th style="text-align:right">Valor hoy</th><th style="text-align:right">Resultado</th><th style="text-align:right">Rentab.</th></tr></thead><tbody>';
+    abiertas.forEach(p=>{
+      const precioEnt=p.cantidad>0?p.costoTotalUSD/p.cantidad:0;
+      const precioHoy=getPrecio(p.nombre,new Date().toISOString().slice(0,10));
+      const valHoy=precioHoy?p.cantidad*precioHoy:p.costoTotalUSD;
+      const res=valHoy-p.costoTotalUSD;
+      const rPct=p.costoTotalUSD>0?(res/p.costoTotalUSD*100):0;
+      const esBTC=p.nombre.toUpperCase()==='BTC';
+      const dec=esBTC?6:2;
+      const sinPrecio=!precioHoy;
+      htmlAb+=`<tr>
+        <td><strong>${p.nombre}</strong>${sinPrecio?'<span style="font-size:10px;color:var(--danger)"> sin precio</span>':''}<br><span style="font-size:11px;color:var(--text3)">${p.categoria||''} · desde ${p.fechaApertura}</span></td>
+        <td style="text-align:right">${Number(p.cantidad).toFixed(dec)}</td>
+        <td style="text-align:right">${fmt(precioEnt)}</td>
+        <td style="text-align:right">${precioHoy?fmt(precioHoy):'—'}</td>
+        <td style="text-align:right">${fmt(valHoy)}</td>
+        <td style="text-align:right;color:var(--${res>=0?'success':'danger'})">${res>=0?'+':''}${fmt(res)}</td>
+        <td style="text-align:right"><span class="badge ${rPct>=0?'bg':'br'}">${pct(rPct)}</span></td>
+      </tr>`;
+    });
+    htmlAb+='</tbody></table>';
+  }
+
+  // Posiciones cerradas
+  let htmlCer='';
+  if(cerradas.length){
+    htmlCer='<div class="sec" style="margin-top:1.5rem">Posiciones cerradas</div>';
+    htmlCer+='<table style="min-width:580px"><thead><tr><th>Activo</th><th style="text-align:right">Invertido</th><th style="text-align:right">Recuperado</th><th style="text-align:right">Resultado</th><th style="text-align:right">Rentab.</th><th>Período</th></tr></thead><tbody>';
+    [...cerradas].reverse().forEach(p=>{
+      const rPct=p.costoUSD>0?(p.resultado/p.costoUSD*100):0;
+      htmlCer+=`<tr>
+        <td><strong>${p.nombre}</strong><br><span style="font-size:11px;color:var(--text3)">${p.categoria||''}</span></td>
+        <td style="text-align:right">${fmt(p.costoUSD)}</td>
+        <td style="text-align:right">${fmt(p.ventaUSD)}</td>
+        <td style="text-align:right;color:var(--${p.resultado>=0?'success':'danger'})">${p.resultado>=0?'+':''}${fmt(p.resultado)}</td>
+        <td style="text-align:right"><span class="badge ${rPct>=0?'bg':'br'}">${pct(rPct)}</span></td>
+        <td style="font-size:11px;color:var(--text3)">${p.fechaApertura} → ${p.fechaCierre}</td>
+      </tr>`;
+    });
+    htmlCer+='</tbody></table>';
+  }
+  document.getElementById('tabla-posiciones').innerHTML=htmlAb+htmlCer;
+
+  // Rentabilidad anual completa — todos los años desde 2022 hasta el actual
+  const anioActual=new Date().getFullYear();
+  const anioInicio=2022;
+  const aniosRange=Array.from({length:anioActual-anioInicio+1},(_,i)=>String(anioInicio+i));
+
+  function calcValorCarteraEnMes(ym){
+    // Valor de todas las posiciones abiertas al cierre del mes ym='YYYY-MM'
+    const mesEnd=ym+'-31';
+    const movsFiltrados=[...(DB.movimientos||[])].filter(m=>m.fecha<=mesEnd).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+    const est={};
+    movsFiltrados.forEach(m=>{
+      const n=m.nombre||m.producto||'?';
+      const t=(m.tipo||'').toLowerCase();
+      const q=Number(m.cantidad),usd=Number(m.montoUSD);
+      if(t==='compra'){
+        if(!est[n])est[n]={nombre:n,cantidad:q,costoTotalUSD:usd};
+        else{est[n].cantidad+=q;est[n].costoTotalUSD+=usd;}
+      } else {
+        if(!est[n])return;
+        const rest=est[n].cantidad-q;
+        if(rest<=0.000001)delete est[n];
+        else{const pp=est[n].costoTotalUSD/est[n].cantidad;est[n].cantidad=rest;est[n].costoTotalUSD-=pp*q;}
+      }
+    });
+    let total=0;
+    Object.values(est).forEach(p=>{
+      const precio=getPrecioMes(p.nombre,ym);
+      total+=precio!=null?p.cantidad*precio:p.costoTotalUSD;
+    });
+    return total;
+  }
+
+  function aportacionesNetas(anio){
+    // Compras - ventas del año en USD
+    const movsAnio=(DB.movimientos||[]).filter(m=>m.fecha.startsWith(anio));
+    const compras=movsAnio.filter(m=>(m.tipo||'').toLowerCase()==='compra').reduce((a,m)=>a+Number(m.montoUSD),0);
+    const ventas=movsAnio.filter(m=>(m.tipo||'').toLowerCase()==='venta').reduce((a,m)=>a+Number(m.montoUSD),0);
+    return compras-ventas;
+  }
+
+  // Calcular rentabilidad acumulada desde inicio
+  const valorHoyAcum=calcValorInvHoy();
+  const totalComprasAcum=(DB.movimientos||[]).filter(m=>(m.tipo||'').toLowerCase()==='compra').reduce((a,m)=>a+Number(m.montoUSD),0);
+  const totalVentasAcum=(DB.movimientos||[]).filter(m=>(m.tipo||'').toLowerCase()==='venta').reduce((a,m)=>a+Number(m.montoUSD),0);
+  const invNeto=totalComprasAcum-totalVentasAcum;
+  // Ganancia acumulada = valor actual + lo que ya vendiste - lo que pusiste
+  const gananciaAcum=valorHoyAcum+totalVentasAcum-totalComprasAcum;
+  const rentAcumPct=totalComprasAcum>0?(gananciaAcum/totalComprasAcum*100):0;
+
+  let htmlA=`
+    <div class="g3" style="margin-bottom:12px">
+      <div class="mc"><div class="mc-label">Total invertido</div><div class="mc-value">${fmt(totalComprasAcum)}</div><div class="mc-sub">compras históricas</div></div>
+      <div class="mc"><div class="mc-label">Ganancia acumulada</div><div class="mc-value" style="color:var(--${gananciaAcum>=0?'success':'danger'})">${gananciaAcum>=0?'+':''}${fmt(gananciaAcum)}</div><div class="mc-sub">realizado + no realizado</div></div>
+      <div class="mc"><div class="mc-label">Rentabilidad total</div><div class="mc-value" style="color:var(--${rentAcumPct>=0?'success':'danger'})">${pct(rentAcumPct)}</div><div class="mc-sub">desde el inicio</div></div>
+    </div>
+    <div class="card overflow-x">
+    <table style="min-width:600px"><thead><tr>
+      <th>Año</th>
+      <th style="text-align:right">Valor inicio</th>
+      <th style="text-align:right">Aportaciones netas</th>
+      <th style="text-align:right">Valor fin</th>
+      <th style="text-align:right">Resultado USD</th>
+      <th style="text-align:right">Rentab. %</th>
+    </tr></thead><tbody>`;
+
+  aniosRange.forEach(anio=>{
+    const valIni=calcValorCarteraEnMes((parseInt(anio)-1)+'-12');
+    const aportes=aportacionesNetas(anio);
+    // Para el año actual usamos valor hoy como fin
+    const esteAnio=anio===String(anioActual);
+    const valFin=esteAnio?calcValorInvHoy():calcValorCarteraEnMes(anio+'-12');
+    // Resultado = val fin - val ini - aportaciones netas del año
+    const resultado=valFin-valIni-aportes;
+    // Base para % = val ini + aportaciones (si positivo, sino usamos abs)
+    const base=valIni+Math.max(0,aportes);
+    const rentPct=base>0?(resultado/base*100):0;
+    const sinDatos=valIni===0&&valFin===0&&aportes===0;
+    htmlA+=`<tr>
+      <td><strong>${anio}</strong>${esteAnio?'<span style="font-size:10px;color:var(--info);margin-left:4px">en curso</span>':''}</td>
+      <td style="text-align:right;color:var(--text2)">${fmt(valIni)}</td>
+      <td style="text-align:right;color:var(--${aportes>=0?'danger':'success'})">${aportes>=0?'+':''}${fmt(aportes)}</td>
+      <td style="text-align:right;color:var(--text2)">${fmt(valFin)}</td>
+      <td style="text-align:right;color:var(--${resultado>=0?'success':'danger'})">${sinDatos?'—':(resultado>=0?'+':'')+fmt(resultado)}</td>
+      <td style="text-align:right"><span class="badge ${sinDatos?'':resultado>=0?'bg':'br'}">${sinDatos?'0.0%':pct(rentPct)}</span></td>
+    </tr>`;
+  });
+  htmlA+='</tbody></table></div>';
+  document.getElementById('tabla-anual').innerHTML=htmlA;
+
+  // Movimientos
+  const movSort=[...(DB.movimientos||[])].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const tbodyM=document.getElementById('tbody-mov');
+  if(!movSort.length){tbodyM.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text3)">Sin movimientos</td></tr>';return;}
+  tbodyM.innerHTML=movSort.map(m=>{
+    const idx=DB.movimientos.indexOf(m);
+    const esBTC=(m.nombre||'').toUpperCase()==='BTC';
+    return`<tr>
+      <td>${m.fecha}</td>
+      <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${m.nombre||m.producto||''}">${m.nombre||m.producto||''}</td>
+      <td><span class="badge ${(m.tipo||'').toLowerCase()==='compra'?'bb':'bg'}">${m.tipo}</span></td>
+      <td style="text-align:right">${Number(m.cantidad).toFixed(esBTC?6:2)}</td>
+      <td style="text-align:right">${Number(m.tc||0).toFixed(3)}</td>
+      <td style="text-align:right">${fmtE(m.montoEur)}</td>
+      <td style="text-align:right">${fmt(m.montoUSD)}</td>
+      <td><button class="btn-danger" onclick="borrarMov(${idx})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+function borrarMov(idx){if(!confirm('¿Borrar?'))return;DB.movimientos.splice(idx,1);debouncedSave();renderInv();}
+
+// ── DEUDAS ───────────────────────────────────────────────
+function renderDeudas(){
+  const cobrar=(DB.deudas||[]).filter(d=>d.tipo==='cobrar'&&!d.pagada);
+  const pagar=(DB.deudas||[]).filter(d=>d.tipo==='pagar'&&!d.pagada);
+  document.getElementById('d-cobrar').textContent=fmt(cobrar.reduce((a,d)=>a+d.monto,0));
+  document.getElementById('d-debo').textContent=fmt(pagar.reduce((a,d)=>a+d.monto,0));
+  const rL=(arr,elId)=>{
+    if(!arr.length){document.getElementById(elId).innerHTML='<div class="empty">Sin registros</div>';return;}
+    document.getElementById(elId).innerHTML=arr.map(d=>`
+      <div class="row-item">
+        <div><strong>${d.persona}</strong>${d.nota?`<span style="font-size:11px;color:var(--text3);margin-left:6px">${d.nota}</span>`:''}<br><span style="font-size:11px;color:var(--text3)">${d.fecha||''}</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="rv" style="color:var(--${d.tipo==='cobrar'?'success':'danger'})">${fmt(d.monto)}</span>
+        <button class="btn-sm" onclick="marcarPagada(${(DB.deudas||[]).indexOf(d)})">${d.tipo==='cobrar'?'Cobrado':'Pagado'}</button></div>
+      </div>`).join('');
+  };
+  rL(cobrar,'lista-cobrar');rL(pagar,'lista-debo');
+}
+function marcarPagada(idx){DB.deudas[idx].pagada=true;debouncedSave();renderDeudas();}
+
+// ── GUARDAR MES ──────────────────────────────────────────
+function guardarMes(){
+  const mes=document.getElementById('m-mes').value;
+  const tcEur=parseFloat(document.getElementById('m-tc-eur').value)||0;
+  if(!mes||!tcEur){showAlert('alert-mes','Completá el mes y el TC EUR/USD','err');return;}
+  const obj={mes,tcEur,
+    tcArs:parseFloat(document.getElementById('m-tc-ars').value)||0,
+    ingEur:parseFloat(document.getElementById('m-ing-eur').value)||0,
+    ingOtros:parseFloat(document.getElementById('m-ing-otros').value)||0,
+    gastoEur:parseFloat(document.getElementById('m-gasto-eur').value)||0,
+    gastoArs:parseFloat(document.getElementById('m-gasto-ars').value)||0,
+    saldoEur:parseFloat(document.getElementById('m-saldo-eur').value)||0,
+    comentario:document.getElementById('m-comentario').value.trim()};
+  const idx=DB.meses.findIndex(m=>m.mes===mes);
+  if(idx>=0)DB.meses[idx]=obj;
+  else DB.meses.push(obj);
+  DB.meses.sort((a,b)=>a.mes.localeCompare(b.mes));
+  debouncedSave();showAlert('alert-mes','Mes guardado','ok');limpiarFormMes();
+}
+function limpiarFormMes(){
+  editMes=null;
+  document.getElementById('form-mes-titulo').textContent='Cargar mes';
+  document.getElementById('btn-borrar-mes').style.display='none';
+  ['m-ing-eur','m-ing-otros','m-gasto-eur','m-gasto-ars','m-saldo-eur','m-comentario','m-tc-ars'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('m-mes').value='';
+  document.getElementById('m-tc-eur').value='';
+}
+function importarCSVMeses(){
+  const raw=document.getElementById('m-csv').value.trim();
+  if(!raw)return;
+  let ok=0,err=0,sobre=0;
+  raw.split('\n').forEach(line=>{
+    line=line.trim();if(!line)return;
+    const p=line.split(',').map(s=>s.trim());
+    if(p.length<2){err++;return;}
+    const mes=p[0],tc_eur=p[1],ing_eur=p[2]||'0',gasto_eur=p[3]||'0',saldo_eur=p[4]||'0';
+    const comentario=p.slice(5).join(',').trim();
+    if(!mes||!tc_eur||!/^\d{4}-\d{2}$/.test(mes)){err++;return;}
+    const obj={mes,tcEur:parseFloat(tc_eur)||1.16,tcArs:0,
+      ingEur:parseFloat(ing_eur)||0,ingOtros:0,
+      gastoEur:parseFloat(gasto_eur)||0,gastoArs:0,
+      saldoEur:parseFloat(saldo_eur)||0,comentario};
+    const idx=DB.meses.findIndex(m=>m.mes===mes);
+    if(idx>=0){DB.meses[idx]=obj;sobre++;}else DB.meses.push(obj);
+    ok++;
+  });
+  DB.meses.sort((a,b)=>a.mes.localeCompare(b.mes));
+  debouncedSave();
+  showAlert('alert-mes',`${ok} meses importados${sobre?' ('+sobre+' sobreescritos)':''}${err?' · '+err+' errores':''}`,err&&!ok?'err':'ok');
+  document.getElementById('m-csv').value='';
+}
+
+// ── INVERSIÓN ────────────────────────────────────────────
+function calcMovUSD(){
+  const eur=parseFloat(document.getElementById('mv-eur').value)||0;
+  const tc=parseFloat(document.getElementById('mv-tc').value)||0;
+  document.getElementById('mv-usd').value=tc>0?(eur*tc).toFixed(2):'';
+}
+function guardarMov(){
+  const fecha=document.getElementById('mv-fecha').value;
+  const nombre=document.getElementById('mv-nombre').value.trim();
+  const categoria=document.getElementById('mv-categoria').value;
+  const tipo=document.getElementById('mv-tipo').value;
+  const cantidad=parseFloat(document.getElementById('mv-cantidad').value)||0;
+  const tc=parseFloat(document.getElementById('mv-tc').value)||0;
+  const montoEur=parseFloat(document.getElementById('mv-eur').value)||0;
+  const montoUSD=parseFloat(document.getElementById('mv-usd').value)||montoEur*tc;
+  if(!fecha||!nombre||!cantidad||!tc||!montoEur){showAlert('alert-mov','Completá todos los campos','err');return;}
+  if(!DB.movimientos)DB.movimientos=[];
+  DB.movimientos.push({fecha,nombre,categoria,tipo,cantidad,tc,montoEur,montoUSD});
+  DB.movimientos.sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  debouncedSave();showAlert('alert-mov','Movimiento guardado','ok');limpiarFormMov();
+}
+function limpiarFormMov(){['mv-cantidad','mv-tc','mv-eur','mv-usd','mv-nombre'].forEach(id=>document.getElementById(id).value='');}
+function importarCSV(){
+  const raw=document.getElementById('mv-csv').value.trim();
+  if(!raw)return;
+  let ok=0,err=0;
+  raw.split('\n').forEach(line=>{
+    line=line.trim();if(!line)return;
+    const p=line.split(',').map(s=>s.trim());
+    if(p.length<6){err++;return;}
+    const fecha=p[0],nombre=p[1],cantidad=p[2],tc=p[3],montoEur=p[4],montoUSD=p[5];
+    const tipo=(p[6]||'compra').toLowerCase().trim();
+    if(!fecha||!nombre||!cantidad){err++;return;}
+    const categoria=nombre.toUpperCase()==='BTC'?'crypto':'etf';
+    if(!DB.movimientos)DB.movimientos=[];
+    DB.movimientos.push({fecha,nombre,categoria,tipo,cantidad:parseFloat(cantidad),tc:parseFloat(tc),montoEur:parseFloat(montoEur),montoUSD:parseFloat(montoUSD)});
+    ok++;
+  });
+  DB.movimientos.sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  debouncedSave();
+  showAlert('alert-mov',`${ok} movimientos importados${err?' · '+err+' errores':''}`,err&&!ok?'err':'ok');
+  document.getElementById('mv-csv').value='';
+}
+
+// ── EFECTIVO ─────────────────────────────────────────────
+function guardarEfectivo(){
+  const fecha=document.getElementById('ef-fecha').value;
+  const bolsa=document.getElementById('ef-bolsa').value;
+  const tipo=document.getElementById('ef-tipo').value;
+  const monto=parseFloat(document.getElementById('ef-monto').value)||0;
+  const nota=document.getElementById('ef-nota').value.trim();
+  if(!fecha||!monto){showAlert('alert-ef','Completá fecha y monto','err');return;}
+  if(!DB.efectivo)DB.efectivo=[];
+  DB.efectivo.push({fecha,bolsa,tipo,monto,nota});
+  DB.efectivo.sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  debouncedSave();showAlert('alert-ef','Movimiento guardado','ok');limpiarFormEf();renderTablaEf();renderLiquidez();
+}
+function limpiarFormEf(){['ef-fecha','ef-monto','ef-nota'].forEach(id=>document.getElementById(id).value='');}
+function renderTablaEf(){
+  if(!DB.efectivo||!DB.efectivo.length){document.getElementById('tbody-ef').innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3)">Sin movimientos</td></tr>';return;}
+  const sorted=[...(DB.efectivo||[])].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  document.getElementById('tbody-ef').innerHTML=sorted.map(m=>{
+    const cur=m.bolsa==='efEur'?'€':'USD';
+    const sign=m.tipo==='entrada'?'+':'-';
+    const color=m.tipo==='entrada'?'var(--success)':'var(--danger)';
+    const idx=DB.efectivo.indexOf(m);
+    return`<tr>
+      <td>${m.fecha}</td><td>${m.bolsa==='efEur'?'Ef. €':'Ef. USD'}</td>
+      <td><span class="badge ${m.tipo==='entrada'?'bg':'br'}">${m.tipo}</span></td>
+      <td style="text-align:right;color:${color}">${sign}${fmtM(m.monto,cur)} ${cur}</td>
+      <td style="color:var(--text3);font-size:12px">${m.nota||''}</td>
+      <td><button class="btn-danger" onclick="borrarEf(${idx})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+function borrarEf(idx){if(!confirm('¿Borrar?'))return;DB.efectivo.splice(idx,1);debouncedSave();renderTablaEf();renderLiquidez();}
+
+// ── DEUDA ────────────────────────────────────────────────
+function guardarDeuda(){
+  const persona=document.getElementById('deu-persona').value.trim();
+  const monto=parseFloat(document.getElementById('deu-monto').value)||0;
+  if(!persona||!monto){showAlert('alert-deuda','Completá persona y monto','err');return;}
+  if(!DB.deudas)DB.deudas=[];
+  DB.deudas.push({persona,fecha:document.getElementById('deu-fecha').value,tipo:document.getElementById('deu-tipo').value,monto,nota:document.getElementById('deu-nota').value.trim(),pagada:false});
+  debouncedSave();showAlert('alert-deuda','Deuda registrada','ok');
+  ['deu-persona','deu-fecha','deu-monto','deu-nota'].forEach(id=>document.getElementById(id).value='');
+}
+
+// ── CONFIG ───────────────────────────────────────────────
+function loadConfig(){
+  const c=DB.config||{};
+  document.getElementById('cfg-tc-eur').value=c.tcEur||'';
+  document.getElementById('cfg-tc-ars').value=c.tcArs||'';
+  document.getElementById('cfg-saldo-ini-eur').value=c.saldoIniEur||'';
+  document.getElementById('cfg-ef-ini-eur').value=c.efIniEur||'';
+  document.getElementById('cfg-ef-ini-usd').value=c.efIniUsd||'';
+  document.getElementById('cfg-ing-fijo').value=c.ingFijo||'';
+  document.getElementById('cfg-gasto-fijo').value=c.gastoFijo||'';
+  document.getElementById('cfg-inv-fija').value=c.invFija||'';
+  document.getElementById('cfg-tc-ref').value=c.tcRef||'';
+}
+function guardarConfig(){
+  DB.config={
+    tcEur:parseFloat(document.getElementById('cfg-tc-eur').value)||1.16,
+    tcArs:parseFloat(document.getElementById('cfg-tc-ars').value)||0,
+    saldoIniEur:parseFloat(document.getElementById('cfg-saldo-ini-eur').value)||0,
+    efIniEur:parseFloat(document.getElementById('cfg-ef-ini-eur').value)||0,
+    efIniUsd:parseFloat(document.getElementById('cfg-ef-ini-usd').value)||0,
+    ingFijo:parseFloat(document.getElementById('cfg-ing-fijo').value)||0,
+    gastoFijo:parseFloat(document.getElementById('cfg-gasto-fijo').value)||0,
+    invFija:parseFloat(document.getElementById('cfg-inv-fija').value)||0,
+    tcRef:parseFloat(document.getElementById('cfg-tc-ref').value)||1.16,
+  };
+  debouncedSave();showAlert('alert-mes','Configuración guardada','ok');
+}
+
+// ── BACKUP ───────────────────────────────────────────────
+function exportarDatos(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='finanzas_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+}
+function importarDatos(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{try{DB=JSON.parse(e.target.result);saveToSheet();location.reload();}catch(err){alert('Error al importar.');}};
+  reader.readAsText(file);
+}
+function resetearDatos(){
+  if(!confirm('¿Borrar TODOS los datos?'))return;
+  localStorage.removeItem(SK);location.reload();
+}
+
+// ── INIT ─────────────────────────────────────────────────
+document.getElementById('mv-fecha').value=new Date().toISOString().slice(0,10);
+document.getElementById('deu-fecha').value=new Date().toISOString().slice(0,10);
+document.getElementById('ef-fecha').value=new Date().toISOString().slice(0,10);
+initLogin();
+</script>
+</body>
+</html>
