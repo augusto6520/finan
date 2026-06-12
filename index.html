@@ -119,12 +119,15 @@ tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
     <div style="font-size:28px;margin-bottom:8px">🔐</div>
     <div class="login-title">Finanzas personales</div>
     <div class="login-sub">Ingresá tu PIN de 4 dígitos</div>
-    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:1rem">
+    <div style="margin:1.25rem 0;display:flex;flex-direction:column;align-items:center;gap:10px">
       <input type="password" id="pin-field" maxlength="4" inputmode="numeric" placeholder="••••"
-        style="width:140px;text-align:center;font-size:24px;letter-spacing:8px;padding:10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;font-family:var(--font)"
-        onkeyup="if(this.value.length===4||event.key==='Enter'){var p=this.value.trim(),g=window.DB&&window.DB.pin?window.DB.pin:'1234';if(p===g){document.getElementById('loginBox').style.display='none';document.getElementById('appRoot').style.opacity='1';renderDash();}else{document.getElementById('loginErr').textContent='PIN incorrecto';this.value='';this.focus();}}">
+        style="width:140px;text-align:center;font-size:28px;letter-spacing:10px;padding:10px 14px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;font-family:var(--font)">
+      <button onclick="(function(){var p=document.getElementById('pin-field').value,g=window.DB?window.DB.pin||'1234':'1234';if(p===g){document.getElementById('loginBox').style.display='none';document.getElementById('appRoot').style.opacity='1';renderDash();}else{document.getElementById('loginErr').textContent='PIN incorrecto';document.getElementById('pin-field').value='';document.getElementById('pin-field').focus();}})()" 
+        style="background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);padding:9px 28px;font-size:14px;cursor:pointer;font-weight:500;font-family:var(--font)">
+        Entrar
+      </button>
     </div>
-    <div id="loginErr" style="font-size:12px;color:var(--danger);min-height:18px;margin-top:8px"></div>
+    <div id="loginErr" style="font-size:12px;color:var(--danger);min-height:18px"></div>
   </div>
 </div>
 
@@ -537,10 +540,25 @@ function doLogin(){
 }
 async function initLogin(){
   document.getElementById('loading').style.display='flex';
-  await loadFromSheet();
+  try{
+    const controller=new AbortController();
+    setTimeout(()=>controller.abort(),6000);
+    setSyncStatus('loading','Cargando...');
+    const r=await fetch(SCRIPT_URL+'?t='+Date.now(),{signal:controller.signal});
+    const text=await r.text();
+    if(text&&text!=='{}'){
+      const p=JSON.parse(text);
+      if(p&&!p.error){DB=p;if(!DB.precios)DB.precios=[];if(!DB.efectivo)DB.efectivo=[];if(!DB.pin)DB.pin='1234';}
+    }
+    try{localStorage.setItem(SK,JSON.stringify(DB));}catch(e){}
+    setSyncStatus('ok','Sincronizado');
+  }catch(e){
+    setSyncStatus('err','Sin conexión');
+    try{const c=localStorage.getItem(SK);if(c){DB=JSON.parse(c);if(!DB.precios)DB.precios=[];if(!DB.efectivo)DB.efectivo=[];if(!DB.pin)DB.pin='1234';}}catch(e2){}
+  }
   document.getElementById('loading').style.display='none';
   document.getElementById('loginBox').style.display='flex';
-  setTimeout(()=>document.getElementById('pin-field').focus(),100);
+  setTimeout(()=>{const f=document.getElementById('pin-field');if(f)f.focus();},200);
 }
 function cambiarPin(){
   const n=document.getElementById('cfg-pin-nuevo').value;
