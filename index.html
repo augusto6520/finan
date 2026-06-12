@@ -120,10 +120,10 @@ tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
     <div class="login-title">Finanzas personales</div>
     <div class="login-sub" id="loginSub">Ingresá tu PIN de 4 dígitos</div>
     <div class="pin-input">
-      <input type="password" maxlength="1" id="p1" inputmode="numeric" oninput="pinNext(this,'p2')">
-      <input type="password" maxlength="1" id="p2" inputmode="numeric" oninput="pinNext(this,'p3')">
-      <input type="password" maxlength="1" id="p3" inputmode="numeric" oninput="pinNext(this,'p4')">
-      <input type="password" maxlength="1" id="p4" inputmode="numeric" oninput="pinSubmit()">
+      <input type="password" maxlength="1" id="p1" inputmode="numeric" oninput="pinNext(this,'p2')" onkeydown="if(event.key==='Enter')checkPinComplete()">
+      <input type="password" maxlength="1" id="p2" inputmode="numeric" oninput="pinNext(this,'p3')" onkeydown="if(event.key==='Enter')checkPinComplete()">
+      <input type="password" maxlength="1" id="p3" inputmode="numeric" oninput="pinNext(this,'p4')" onkeydown="if(event.key==='Enter')checkPinComplete()">
+      <input type="password" maxlength="1" id="p4" inputmode="numeric" oninput="checkPinComplete()" onkeydown="if(event.key==='Enter')checkPinComplete()">
     </div>
     <div id="loginErr" style="font-size:12px;color:var(--danger);min-height:18px"></div>
   </div>
@@ -503,7 +503,17 @@ function debouncedSave(){clearTimeout(syncTimer);syncTimer=setTimeout(saveToShee
 async function syncNow(){await loadFromSheet();renderCurrentPage();}
 
 // ── LOGIN ───────────────────────────────────────────────
-function pinNext(el,nextId){if(el.value.length===1)document.getElementById(nextId).focus();}
+function pinNext(el,nextId){
+  if(el.value.length===1){
+    document.getElementById(nextId).focus();
+    // Check if all filled after moving
+    checkPinComplete();
+  }
+}
+function checkPinComplete(){
+  const pin=[1,2,3,4].map(i=>document.getElementById('p'+i).value).join('');
+  if(pin.length===4)pinSubmit();
+}
 function pinSubmit(){
   const pin=[1,2,3,4].map(i=>document.getElementById('p'+i).value).join('');
   if(pin.length<4)return;
