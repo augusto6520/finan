@@ -504,16 +504,17 @@ async function syncNow(){await loadFromSheet();renderCurrentPage();}
 
 // ── LOGIN ───────────────────────────────────────────────
 function doLogin(){
-  const pin=document.getElementById('pin-field').value;
-  if(pin===DB.pin){
+  const pin=document.getElementById('pin-field').value.trim();
+  const pinGuardado=DB.pin||'1234';
+  if(pin===pinGuardado){
     document.getElementById('loginBox').style.display='none';
     document.getElementById('appRoot').style.opacity='1';
     renderDash();
   } else {
-    document.getElementById('loginErr').textContent='PIN incorrecto';
+    document.getElementById('loginErr').textContent='PIN incorrecto (intentaste: '+pin+', guardado: '+pinGuardado+')';
     document.getElementById('pin-field').value='';
     document.getElementById('pin-field').focus();
-    setTimeout(()=>document.getElementById('loginErr').textContent='',2000);
+    setTimeout(()=>document.getElementById('loginErr').textContent='',4000);
   }
 }
 async function initLogin(){
