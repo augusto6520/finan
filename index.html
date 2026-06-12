@@ -930,9 +930,9 @@ function renderInv(){
   const rentTotal=totComp>0?((totRealizado+noRealizado)/totComp*100):0;
 
   document.getElementById('inv-metrics').innerHTML=`
-    <div class="mc"><div class="mc-label">Total invertido (histórico)</div><div class="mc-value">${fmt(totComp)}</div></div>
-    <div class="mc"><div class="mc-label">Valor posiciones abiertas</div><div class="mc-value">${fmt(valorAbiertas)}</div></div>
-    <div class="mc"><div class="mc-label">Rentabilidad total</div><div class="mc-value" style="color:var(--${rentTotal>=0?'success':'danger'})">${pct(rentTotal)}</div><div class="mc-sub">realizado + no realizado</div></div>`;
+    <div class="mc"><div class="mc-label">Total comprado (histórico)</div><div class="mc-value">${fmt(totComp)}</div><div class="mc-sub">suma de todas las compras</div></div>
+    <div class="mc"><div class="mc-label">Valor posiciones abiertas</div><div class="mc-value">${fmt(valorAbiertas)}</div><div class="mc-sub">a precio actual</div></div>
+    <div class="mc"><div class="mc-label">Ganancia neta total</div><div class="mc-value" style="color:var(--${(totRealizado+noRealizado)>=0?'success':'danger'})">${(totRealizado+noRealizado)>=0?'+':''}${fmt(totRealizado+noRealizado)}</div><div class="mc-sub">ver detalle en Rentabilidad anual</div></div>`;
 
   // Posiciones abiertas
   let htmlAb='';
@@ -1025,62 +1025,73 @@ function renderInv(){
   const valorHoyAcum=calcValorInvHoy();
   const totalComprasAcum=(DB.movimientos||[]).filter(m=>(m.tipo||'').toLowerCase()==='compra').reduce((a,m)=>a+Number(m.montoUSD),0);
   const totalVentasAcum=(DB.movimientos||[]).filter(m=>(m.tipo||'').toLowerCase()==='venta').reduce((a,m)=>a+Number(m.montoUSD),0);
-  const invNeto=totalComprasAcum-totalVentasAcum;
+  // Ganancia neta = valor actual + recuperado por ventas - total comprado
   const gananciaAcum=valorHoyAcum+totalVentasAcum-totalComprasAcum;
-  const rentAcumPct=invNeto>0?(gananciaAcum/invNeto*100):0;
+  // % simple y honesto: ganancia / total comprado
+  const rentAcumPct=totalComprasAcum>0?(gananciaAcum/totalComprasAcum*100):0;
 
-  // TWRR — encadena rentabilidades anuales eliminando efecto de aportaciones
-  function calcRentAnioTWRR(anio){
-    const valIni=calcValorCarteraEnMes((parseInt(anio)-1)+'-12');
+  function calcRentAnioData(anio){
+    const valIniRaw=calcValorCarteraEnMes((parseInt(anio)-1)+'-12');
     const aportes=aportacionesNetas(anio);
     const esteAnio=anio===String(anioActual);
     const valFin=esteAnio?calcValorInvHoy():calcValorCarteraEnMes(anio+'-12');
-    const resultado=valFin-valIni-aportes;
-    const base=valIni+Math.max(0,aportes);
-    return base>0?(resultado/base):0;
+    // Capital inicio: valor fin del año anterior.
+    // Caso especial: si es el primer año con actividad y no había nada antes,
+    // el capital inicio es la primera aportación (no $0).
+    const hayActividadAnterior=valIniRaw>0;
+    const primeraAportacion=Math.max(0,aportes);
+    const valIni=hayActividadAnterior?valIniRaw:primeraAportacion;
+    // Capital en juego = lo que había al inicio + aportaciones del año
+    // Si arrancamos desde cero con aportación, el capital en juego ES esa aportación
+    const capitalEnJuego=hayActividadAnterior?(valIniRaw+aportes):primeraAportacion;
+    // Resultado = valor fin - capital inicio - aportaciones del año
+    // Para el primer año sin historial: resultado = val fin - aportación
+    const resultado=hayActividadAnterior?(valFin-valIniRaw-aportes):(valFin-primeraAportacion);
+    const rentPct=capitalEnJuego>0?(resultado/capitalEnJuego*100):0;
+    const sinDatos=valIni===0&&valFin===0&&aportes===0;
+    return{anio,valIni,aportes,valFin,resultado,rentPct,sinDatos,capitalEnJuego};
   }
-  // Solo años con actividad o posición abierta para TWRR
-  const rentsPorAnio=aniosRange.map(a=>calcRentAnioTWRR(a));
-  const productoTWRR=rentsPorAnio.reduce((prod,r)=>prod*(1+r),1);
-  const nAnios=aniosRange.length;
-  const twrr=nAnios>0?(Math.pow(productoTWRR,1/nAnios)-1)*100:0;
+
+  // TWRR encadenando solo años con actividad real
+  const datosAnuales=aniosRange.map(a=>calcRentAnioData(a));
+  const productoTWRR=datosAnuales.reduce((prod,d)=>d.sinDatos?prod:prod*(1+d.rentPct/100),1);
+  const aniosConActividad=datosAnuales.filter(d=>!d.sinDatos).length;
+  const twrr=aniosConActividad>0?(Math.pow(productoTWRR,1/aniosConActividad)-1)*100:0;
 
   let htmlA=`
     <div class="g4" style="margin-bottom:12px">
-      <div class="mc"><div class="mc-label">Total invertido</div><div class="mc-value">${fmt(totalComprasAcum)}</div><div class="mc-sub">compras históricas</div></div>
-      <div class="mc"><div class="mc-label">Ganancia acumulada</div><div class="mc-value" style="color:var(--${gananciaAcum>=0?'success':'danger'})">${gananciaAcum>=0?'+':''}${fmt(gananciaAcum)}</div><div class="mc-sub">realizado + no realizado</div></div>
-      <div class="mc"><div class="mc-label">Rentabilidad total</div><div class="mc-value" style="color:var(--${rentAcumPct>=0?'success':'danger'})">${pct(rentAcumPct)}</div><div class="mc-sub">sobre capital neto</div></div>
+      <div class="mc"><div class="mc-label">Total comprado</div><div class="mc-value">${fmt(totalComprasAcum)}</div><div class="mc-sub">compras históricas</div></div>
+      <div class="mc"><div class="mc-label">Valor actual + recuperado</div><div class="mc-value">${fmt(valorHoyAcum+totalVentasAcum)}</div><div class="mc-sub">posiciones + ventas</div></div>
+      <div class="mc"><div class="mc-label">Ganancia neta</div><div class="mc-value" style="color:var(--${gananciaAcum>=0?'success':'danger'})">${gananciaAcum>=0?'+':''}${fmt(gananciaAcum)}</div><div class="mc-sub">${pct(rentAcumPct)} sobre lo invertido</div></div>
+      <div class="mc"><div class="mc-label">Rentab. anual promedio</div><div class="mc-value" style="color:var(--${twrr>=0?'success':'danger'})">${pct(twrr)}</div><div class="mc-sub">TWRR anualizado</div></div>
+    </div>
+
+  let htmlA=`
+    <div class="g4" style="margin-bottom:12px">
+      <div class="mc"><div class="mc-label">Total comprado</div><div class="mc-value">${fmt(totalComprasAcum)}</div><div class="mc-sub">compras históricas</div></div>
+      <div class="mc"><div class="mc-label">Valor actual + recuperado</div><div class="mc-value">${fmt(valorHoyAcum+totalVentasAcum)}</div><div class="mc-sub">posiciones + ventas</div></div>
+      <div class="mc"><div class="mc-label">Ganancia neta</div><div class="mc-value" style="color:var(--${gananciaAcum>=0?'success':'danger'})">${gananciaAcum>=0?'+':''}${fmt(gananciaAcum)}</div><div class="mc-sub">${pct(rentAcumPct)} sobre lo invertido</div></div>
       <div class="mc"><div class="mc-label">Rentab. anual promedio</div><div class="mc-value" style="color:var(--${twrr>=0?'success':'danger'})">${pct(twrr)}</div><div class="mc-sub">TWRR anualizado</div></div>
     </div>
     <div class="card overflow-x">
     <table style="min-width:600px"><thead><tr>
       <th>Año</th>
-      <th style="text-align:right">Valor inicio</th>
+      <th style="text-align:right">Capital inicio</th>
       <th style="text-align:right">Aportaciones netas</th>
       <th style="text-align:right">Valor fin</th>
       <th style="text-align:right">Resultado USD</th>
       <th style="text-align:right">Rentab. %</th>
     </tr></thead><tbody>`;
 
-  aniosRange.forEach(anio=>{
-    const valIni=calcValorCarteraEnMes((parseInt(anio)-1)+'-12');
-    const aportes=aportacionesNetas(anio);
-    // Para el año actual usamos valor hoy como fin
-    const esteAnio=anio===String(anioActual);
-    const valFin=esteAnio?calcValorInvHoy():calcValorCarteraEnMes(anio+'-12');
-    // Resultado = val fin - val ini - aportaciones netas del año
-    const resultado=valFin-valIni-aportes;
-    // Base para % = val ini + aportaciones (si positivo, sino usamos abs)
-    const base=valIni+Math.max(0,aportes);
-    const rentPct=base>0?(resultado/base*100):0;
-    const sinDatos=valIni===0&&valFin===0&&aportes===0;
+  datosAnuales.forEach(d=>{
+    const esteAnio=d.anio===String(anioActual);
     htmlA+=`<tr>
-      <td><strong>${anio}</strong>${esteAnio?'<span style="font-size:10px;color:var(--info);margin-left:4px">en curso</span>':''}</td>
-      <td style="text-align:right;color:var(--text2)">${fmt(valIni)}</td>
-      <td style="text-align:right;color:var(--${aportes>=0?'danger':'success'})">${aportes>=0?'+':''}${fmt(aportes)}</td>
-      <td style="text-align:right;color:var(--text2)">${fmt(valFin)}</td>
-      <td style="text-align:right;color:var(--${resultado>=0?'success':'danger'})">${sinDatos?'—':(resultado>=0?'+':'')+fmt(resultado)}</td>
-      <td style="text-align:right"><span class="badge ${sinDatos?'':resultado>=0?'bg':'br'}">${sinDatos?'0.0%':pct(rentPct)}</span></td>
+      <td><strong>${d.anio}</strong>${esteAnio?' <span style="font-size:10px;color:var(--info)">en curso</span>':''}</td>
+      <td style="text-align:right;color:var(--text2)">${d.sinDatos?'—':fmt(d.valIni)}</td>
+      <td style="text-align:right;color:var(--${d.aportes>=0?'danger':'success'})">${d.sinDatos?'—':(d.aportes>=0?'+':'')+fmt(d.aportes)}</td>
+      <td style="text-align:right;color:var(--text2)">${d.sinDatos?'—':fmt(d.valFin)}</td>
+      <td style="text-align:right;color:var(--${d.resultado>=0?'success':'danger'})">${d.sinDatos?'—':(d.resultado>=0?'+':'')+fmt(d.resultado)}</td>
+      <td style="text-align:right"><span class="badge ${d.sinDatos?'':d.rentPct>=0?'bg':'br'}">${d.sinDatos?'0.0%':pct(d.rentPct)}</span></td>
     </tr>`;
   });
   htmlA+='</tbody></table></div>';
