@@ -118,14 +118,14 @@ tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
   <div class="login-card">
     <div style="font-size:28px;margin-bottom:8px">🔐</div>
     <div class="login-title">Finanzas personales</div>
-    <div class="login-sub" id="loginSub">Ingresá tu PIN de 4 dígitos</div>
-    <div class="pin-input">
-      <input type="password" maxlength="1" id="p1" inputmode="numeric" oninput="pinNext(this,'p2')" onkeydown="if(event.key==='Enter')checkPinComplete()">
-      <input type="password" maxlength="1" id="p2" inputmode="numeric" oninput="pinNext(this,'p3')" onkeydown="if(event.key==='Enter')checkPinComplete()">
-      <input type="password" maxlength="1" id="p3" inputmode="numeric" oninput="pinNext(this,'p4')" onkeydown="if(event.key==='Enter')checkPinComplete()">
-      <input type="password" maxlength="1" id="p4" inputmode="numeric" oninput="checkPinComplete()" onkeydown="if(event.key==='Enter')checkPinComplete()">
+    <div class="login-sub">Ingresá tu PIN de 4 dígitos</div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:1rem">
+      <input type="password" id="pin-field" maxlength="4" inputmode="numeric" placeholder="••••"
+        style="width:120px;text-align:center;font-size:24px;letter-spacing:8px;padding:10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;font-family:var(--font)"
+        onkeydown="if(event.key==='Enter')doLogin()">
     </div>
-    <div id="loginErr" style="font-size:12px;color:var(--danger);min-height:18px"></div>
+    <button class="btn-p" style="width:120px" onclick="doLogin()">Entrar</button>
+    <div id="loginErr" style="font-size:12px;color:var(--danger);min-height:18px;margin-top:8px"></div>
   </div>
 </div>
 
@@ -503,27 +503,16 @@ function debouncedSave(){clearTimeout(syncTimer);syncTimer=setTimeout(saveToShee
 async function syncNow(){await loadFromSheet();renderCurrentPage();}
 
 // ── LOGIN ───────────────────────────────────────────────
-function pinNext(el,nextId){
-  if(el.value.length===1){
-    document.getElementById(nextId).focus();
-    // Check if all filled after moving
-    checkPinComplete();
-  }
-}
-function checkPinComplete(){
-  const pin=[1,2,3,4].map(i=>document.getElementById('p'+i).value).join('');
-  if(pin.length===4)pinSubmit();
-}
-function pinSubmit(){
-  const pin=[1,2,3,4].map(i=>document.getElementById('p'+i).value).join('');
-  if(pin.length<4)return;
+function doLogin(){
+  const pin=document.getElementById('pin-field').value;
   if(pin===DB.pin){
     document.getElementById('loginBox').style.display='none';
     document.getElementById('appRoot').style.opacity='1';
+    renderDash();
   } else {
     document.getElementById('loginErr').textContent='PIN incorrecto';
-    [1,2,3,4].forEach(i=>{document.getElementById('p'+i).value='';});
-    document.getElementById('p1').focus();
+    document.getElementById('pin-field').value='';
+    document.getElementById('pin-field').focus();
     setTimeout(()=>document.getElementById('loginErr').textContent='',2000);
   }
 }
@@ -532,8 +521,7 @@ async function initLogin(){
   await loadFromSheet();
   document.getElementById('loading').style.display='none';
   document.getElementById('loginBox').style.display='flex';
-  document.getElementById('p1').focus();
-  renderDash();
+  setTimeout(()=>document.getElementById('pin-field').focus(),100);
 }
 function cambiarPin(){
   const n=document.getElementById('cfg-pin-nuevo').value;
