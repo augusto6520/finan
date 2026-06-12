@@ -981,24 +981,93 @@ function renderInv(){
   }
   document.getElementById('tabla-posiciones').innerHTML=htmlAb+htmlCer;
 
-  // Rentabilidad anual con no realizado por año
-  let htmlA='<table><thead><tr><th>Año</th><th style="text-align:right">Compras</th><th style="text-align:right">Ventas</th><th style="text-align:right">Realizado</th><th style="text-align:right">No realizado*</th><th style="text-align:right">Total año</th></tr></thead><tbody>';
-  rentAnual.forEach(a=>{
-    // No realizado: variación valor posiciones abiertas durante el año
-    const precioIni=getPrecioMes('BTC',(parseInt(a.anio)-1)+'-12')||null;
-    const precioFin=getPrecioMes('BTC',a.anio+'-12')||null;
-    // Simplificado por ahora — mostramos realizado y nota
+  // Rentabilidad anual completa — todos los años desde 2022 hasta el actual
+  const anioActual=new Date().getFullYear();
+  const anioInicio=2022;
+  const aniosRange=Array.from({length:anioActual-anioInicio+1},(_,i)=>String(anioInicio+i));
+
+  function calcValorCarteraEnMes(ym){
+    // Valor de todas las posiciones abiertas al cierre del mes ym='YYYY-MM'
+    const mesEnd=ym+'-31';
+    const movsFiltrados=[...(DB.movimientos||[])].filter(m=>m.fecha<=mesEnd).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+    const est={};
+    movsFiltrados.forEach(m=>{
+      const n=m.nombre||m.producto||'?';
+      const t=(m.tipo||'').toLowerCase();
+      const q=Number(m.cantidad),usd=Number(m.montoUSD);
+      if(t==='compra'){
+        if(!est[n])est[n]={nombre:n,cantidad:q,costoTotalUSD:usd};
+        else{est[n].cantidad+=q;est[n].costoTotalUSD+=usd;}
+      } else {
+        if(!est[n])return;
+        const rest=est[n].cantidad-q;
+        if(rest<=0.000001)delete est[n];
+        else{const pp=est[n].costoTotalUSD/est[n].cantidad;est[n].cantidad=rest;est[n].costoTotalUSD-=pp*q;}
+      }
+    });
+    let total=0;
+    Object.values(est).forEach(p=>{
+      const precio=getPrecioMes(p.nombre,ym);
+      total+=precio!=null?p.cantidad*precio:p.costoTotalUSD;
+    });
+    return total;
+  }
+
+  function aportacionesNetas(anio){
+    // Compras - ventas del año en USD
+    const movsAnio=(DB.movimientos||[]).filter(m=>m.fecha.startsWith(anio));
+    const compras=movsAnio.filter(m=>(m.tipo||'').toLowerCase()==='compra').reduce((a,m)=>a+Number(m.montoUSD),0);
+    const ventas=movsAnio.filter(m=>(m.tipo||'').toLowerCase()==='venta').reduce((a,m)=>a+Number(m.montoUSD),0);
+    return compras-ventas;
+  }
+
+  // Calcular rentabilidad acumulada desde inicio
+  const valorHoyAcum=calcValorInvHoy();
+  const totalComprasAcum=(DB.movimientos||[]).filter(m=>(m.tipo||'').toLowerCase()==='compra').reduce((a,m)=>a+Number(m.montoUSD),0);
+  const totalVentasAcum=(DB.movimientos||[]).filter(m=>(m.tipo||'').toLowerCase()==='venta').reduce((a,m)=>a+Number(m.montoUSD),0);
+  const invNeto=totalComprasAcum-totalVentasAcum;
+  // Ganancia acumulada = valor actual + lo que ya vendiste - lo que pusiste
+  const gananciaAcum=valorHoyAcum+totalVentasAcum-totalComprasAcum;
+  const rentAcumPct=totalComprasAcum>0?(gananciaAcum/totalComprasAcum*100):0;
+
+  let htmlA=`
+    <div class="g3" style="margin-bottom:12px">
+      <div class="mc"><div class="mc-label">Total invertido</div><div class="mc-value">${fmt(totalComprasAcum)}</div><div class="mc-sub">compras históricas</div></div>
+      <div class="mc"><div class="mc-label">Ganancia acumulada</div><div class="mc-value" style="color:var(--${gananciaAcum>=0?'success':'danger'})">${gananciaAcum>=0?'+':''}${fmt(gananciaAcum)}</div><div class="mc-sub">realizado + no realizado</div></div>
+      <div class="mc"><div class="mc-label">Rentabilidad total</div><div class="mc-value" style="color:var(--${rentAcumPct>=0?'success':'danger'})">${pct(rentAcumPct)}</div><div class="mc-sub">desde el inicio</div></div>
+    </div>
+    <div class="card overflow-x">
+    <table style="min-width:600px"><thead><tr>
+      <th>Año</th>
+      <th style="text-align:right">Valor inicio</th>
+      <th style="text-align:right">Aportaciones netas</th>
+      <th style="text-align:right">Valor fin</th>
+      <th style="text-align:right">Resultado USD</th>
+      <th style="text-align:right">Rentab. %</th>
+    </tr></thead><tbody>`;
+
+  aniosRange.forEach(anio=>{
+    const valIni=calcValorCarteraEnMes((parseInt(anio)-1)+'-12');
+    const aportes=aportacionesNetas(anio);
+    // Para el año actual usamos valor hoy como fin
+    const esteAnio=anio===String(anioActual);
+    const valFin=esteAnio?calcValorInvHoy():calcValorCarteraEnMes(anio+'-12');
+    // Resultado = val fin - val ini - aportaciones netas del año
+    const resultado=valFin-valIni-aportes;
+    // Base para % = val ini + aportaciones (si positivo, sino usamos abs)
+    const base=valIni+Math.max(0,aportes);
+    const rentPct=base>0?(resultado/base*100):0;
+    const sinDatos=valIni===0&&valFin===0&&aportes===0;
     htmlA+=`<tr>
-      <td><strong>${a.anio}</strong></td>
-      <td style="text-align:right;color:var(--danger)">${fmt(a.comprasUSD)}</td>
-      <td style="text-align:right;color:var(--success)">${fmt(a.ventasUSD)}</td>
-      <td style="text-align:right"><span class="badge ${a.realizadoUSD>=0?'bg':'br'}">${a.realizadoUSD>=0?'+':''}${fmt(a.realizadoUSD)}</span></td>
-      <td style="text-align:right;color:var(--text3)">—</td>
-      <td style="text-align:right;font-weight:500">${fmt(a.realizadoUSD)}</td>
+      <td><strong>${anio}</strong>${esteAnio?'<span style="font-size:10px;color:var(--info);margin-left:4px">en curso</span>':''}</td>
+      <td style="text-align:right;color:var(--text2)">${fmt(valIni)}</td>
+      <td style="text-align:right;color:var(--${aportes>=0?'danger':'success'})">${aportes>=0?'+':''}${fmt(aportes)}</td>
+      <td style="text-align:right;color:var(--text2)">${fmt(valFin)}</td>
+      <td style="text-align:right;color:var(--${resultado>=0?'success':'danger'})">${sinDatos?'—':(resultado>=0?'+':'')+fmt(resultado)}</td>
+      <td style="text-align:right"><span class="badge ${sinDatos?'':resultado>=0?'bg':'br'}">${sinDatos?'0.0%':pct(rentPct)}</span></td>
     </tr>`;
   });
-  if(!rentAnual.length)htmlA+='<tr><td colspan="6" style="text-align:center;color:var(--text3)">Sin movimientos</td></tr>';
-  htmlA+='</tbody></table><p style="font-size:11px;color:var(--text3);margin-top:8px">* Rentabilidad no realizada por año próximamente con más precios históricos cargados.</p>';
+  htmlA+='</tbody></table></div>';
   document.getElementById('tabla-anual').innerHTML=htmlA;
 
   // Movimientos
