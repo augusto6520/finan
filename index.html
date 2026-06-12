@@ -121,10 +121,9 @@ tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
     <div class="login-sub">Ingresá tu PIN de 4 dígitos</div>
     <div style="display:flex;gap:8px;justify-content:center;margin-bottom:1rem">
       <input type="password" id="pin-field" maxlength="4" inputmode="numeric" placeholder="••••"
-        style="width:120px;text-align:center;font-size:24px;letter-spacing:8px;padding:10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;font-family:var(--font)"
-        onkeydown="if(event.key==='Enter')doLogin()">
+        style="width:140px;text-align:center;font-size:24px;letter-spacing:8px;padding:10px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;font-family:var(--font)"
+        onkeyup="if(this.value.length===4||event.key==='Enter'){var p=this.value.trim(),g=window.DB&&window.DB.pin?window.DB.pin:'1234';if(p===g){document.getElementById('loginBox').style.display='none';document.getElementById('appRoot').style.opacity='1';renderDash();}else{document.getElementById('loginErr').textContent='PIN incorrecto';this.value='';this.focus();}}">
     </div>
-    <button class="btn-p" style="width:120px" onclick="doLogin()">Entrar</button>
     <div id="loginErr" style="font-size:12px;color:var(--danger);min-height:18px;margin-top:8px"></div>
   </div>
 </div>
