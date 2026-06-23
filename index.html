@@ -102,36 +102,27 @@ tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
 .loading-overlay{position:fixed;inset:0;background:var(--bg3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:100;font-size:14px;color:var(--text2)}
 .spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:spin 0.7s linear infinite}
 .login-box{position:fixed;inset:0;background:var(--bg3);display:flex;align-items:center;justify-content:center;z-index:200}
-.login-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:2rem;width:320px;text-align:center}
+.login-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:2.5rem 2rem;width:320px;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
 .login-title{font-size:20px;font-weight:500;margin-bottom:6px}
 .login-sub{font-size:13px;color:var(--text2);margin-bottom:1.5rem}
-.pin-input{display:flex;gap:10px;justify-content:center;margin-bottom:1.25rem}
-.pin-input input{width:44px;height:52px;text-align:center;font-size:22px;font-weight:500;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;font-family:var(--font)}
-.pin-input input:focus{border-color:var(--info);box-shadow:0 0 0 2px var(--info-bg)}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div class="login-box" id="loginBox">
+<div class="login-box" id="loginBox" style="display:none">
   <div class="login-card">
-    <div style="font-size:28px;margin-bottom:8px">🔐</div>
+    <div style="font-size:32px;margin-bottom:12px">🔐</div>
     <div class="login-title">Finanzas personales</div>
     <div class="login-sub">Ingresá tu PIN de 4 dígitos</div>
-    <div style="margin:1.25rem 0;display:flex;flex-direction:column;align-items:center;gap:10px">
-      <input type="password" id="pin-field" maxlength="4" inputmode="numeric" placeholder="••••"
-        style="width:140px;text-align:center;font-size:28px;letter-spacing:10px;padding:10px 14px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;font-family:var(--font)">
-      <button onclick="(function(){var p=document.getElementById('pin-field').value,g=window.DB?window.DB.pin||'1234':'1234';if(p===g){document.getElementById('loginBox').style.display='none';document.getElementById('appRoot').style.opacity='1';renderDash();}else{document.getElementById('loginErr').textContent='PIN incorrecto';document.getElementById('pin-field').value='';document.getElementById('pin-field').focus();}})()" 
-        style="background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);padding:9px 28px;font-size:14px;cursor:pointer;font-weight:500;font-family:var(--font)">
-        Entrar
-      </button>
-    </div>
-    <div id="loginErr" style="font-size:12px;color:var(--danger);min-height:18px"></div>
+    <input type="password" id="pinInput" maxlength="4" inputmode="numeric" placeholder="••••"
+      style="width:100%;text-align:center;font-size:28px;letter-spacing:12px;padding:12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;font-family:var(--font);margin-bottom:12px">
+    <button id="pinBtn" class="btn-p" style="width:100%;padding:10px">Entrar</button>
+    <div id="pinErr" style="font-size:12px;color:var(--danger);margin-top:8px;min-height:16px"></div>
   </div>
 </div>
 
-<div class="loading-overlay" id="loading" style="display:none"><div class="spinner"></div><span>Cargando datos...</span></div>
+<div class="loading-overlay" id="loading"><div class="spinner"></div><span>Cargando...</span></div>
 
 <div class="app" style="opacity:0;transition:opacity 0.3s" id="appRoot">
 <div class="sidebar">
@@ -150,7 +141,6 @@ tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
 </div>
 <div class="main">
 
-<!-- TABLERO -->
 <div id="page-dashboard" class="page active">
   <div class="page-header">
     <div class="page-title">Tablero</div>
@@ -167,7 +157,6 @@ tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
   <div class="card"><div class="sec">Evolución patrimonial (USD)</div><canvas id="evoChart" height="110"></canvas></div>
 </div>
 
-<!-- LIQUIDEZ -->
 <div id="page-liquidez" class="page">
   <div class="page-header"><div class="page-title">Liquidez</div></div>
   <div class="g3" id="liq-metrics"></div>
@@ -177,7 +166,6 @@ tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
   </div>
 </div>
 
-<!-- MES A MES -->
 <div id="page-mensual" class="page">
   <div class="page-header"><div class="page-title">Mes a mes</div></div>
   <div class="tab-bar">
@@ -207,7 +195,6 @@ tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
   </div>
 </div>
 
-<!-- INVERSIONES -->
 <div id="page-inversiones" class="page">
   <div class="page-header"><div class="page-title">Inversiones</div></div>
   <div class="g3" id="inv-metrics"></div>
@@ -218,7 +205,7 @@ tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
     <button class="tab" onclick="switchTab(this,'itab-precios')">Precios históricos</button>
   </div>
   <div id="itab-posiciones"><div class="card overflow-x"><div id="tabla-posiciones"></div></div></div>
-  <div id="itab-anual" style="display:none"><div class="card overflow-x"><div id="tabla-anual"></div></div></div>
+  <div id="itab-anual" style="display:none"><div id="tabla-anual"></div></div>
   <div id="itab-movimientos" style="display:none">
     <div class="card overflow-x">
       <table style="min-width:580px">
@@ -234,10 +221,8 @@ tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
   <div id="itab-precios" style="display:none">
     <div class="card">
       <div class="sec">Importar precios históricos (CSV)</div>
-      <p style="font-size:12px;color:var(--text2);margin-bottom:8px">Formato: <code>activo,fecha,precio_usd</code> — usá el nombre exacto del activo.</p>
-      <textarea id="precios-csv" rows="6" placeholder="BTC,2022-12-31,16547
-BTC,2023-12-31,42258
-BTC,2024-12-31,93429"></textarea>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:8px">Formato: <code>activo,fecha,precio_usd</code></p>
+      <textarea id="precios-csv" rows="6" placeholder="BTC,2022-12-31,16547&#10;BTC,2023-12-31,42258"></textarea>
       <button class="btn" style="margin-top:8px" onclick="importarPrecios()">Importar precios</button>
       <div id="alert-precios" style="margin-top:8px"></div>
     </div>
@@ -249,7 +234,6 @@ BTC,2024-12-31,93429"></textarea>
   </div>
 </div>
 
-<!-- DEUDAS -->
 <div id="page-deudas" class="page">
   <div class="page-header"><div class="page-title">Deudas</div><button class="btn" onclick="nav('cargar-deuda',null)">+ Nueva</button></div>
   <div class="g2">
@@ -264,7 +248,6 @@ BTC,2024-12-31,93429"></textarea>
   <div id="dtab-debo" style="display:none"><div class="card"><div id="lista-debo"></div></div></div>
 </div>
 
-<!-- CARGAR / EDITAR MES -->
 <div id="page-cargar-mes" class="page">
   <div class="page-header"><div class="page-title" id="form-mes-titulo">Cargar mes</div></div>
   <div id="alert-mes"></div>
@@ -275,7 +258,7 @@ BTC,2024-12-31,93429"></textarea>
       <div></div>
     </div>
     <div class="fg2">
-      <div class="frow"><label class="fl">TC EUR/USD (el que uses ese mes)</label><div class="iuwu"><input type="number" id="m-tc-eur" placeholder="1.16" step="0.001"><div class="unit">USD/€</div></div></div>
+      <div class="frow"><label class="fl">TC EUR/USD</label><div class="iuwu"><input type="number" id="m-tc-eur" placeholder="1.16" step="0.001"><div class="unit">USD/€</div></div></div>
       <div class="frow"><label class="fl">TC ARS/USD (si aplica)</label><div class="iuwu"><input type="number" id="m-tc-ars" placeholder="0" step="1"><div class="unit">ARS/$</div></div></div>
     </div>
     <div class="sec" style="margin-top:1rem">Ingresos</div>
@@ -285,12 +268,12 @@ BTC,2024-12-31,93429"></textarea>
     </div>
     <div class="sec" style="margin-top:1rem">Gastos del mes</div>
     <div class="fg2">
-      <div class="frow"><label class="fl">Total gastos en € </label><div class="iuwu"><input type="number" id="m-gasto-eur" placeholder="0"><div class="unit">€</div></div></div>
+      <div class="frow"><label class="fl">Total gastos en €</label><div class="iuwu"><input type="number" id="m-gasto-eur" placeholder="0"><div class="unit">€</div></div></div>
       <div class="frow"><label class="fl">Total gastos en ARS</label><div class="iuwu"><input type="number" id="m-gasto-ars" placeholder="0"><div class="unit">ARS</div></div></div>
     </div>
     <div class="sec" style="margin-top:1rem">Saldo Cuenta € al cierre</div>
     <div class="fg2">
-      <div class="frow"><label class="fl">Saldo cuenta € al cierre del mes</label><div class="iuwu"><input type="number" id="m-saldo-eur" placeholder="0"><div class="unit">€</div></div></div>
+      <div class="frow"><label class="fl">Saldo cuenta € al cierre</label><div class="iuwu"><input type="number" id="m-saldo-eur" placeholder="0"><div class="unit">€</div></div></div>
       <div></div>
     </div>
     <div class="sec" style="margin-top:1rem">Comentario</div>
@@ -298,7 +281,7 @@ BTC,2024-12-31,93429"></textarea>
     <div style="margin-top:1.25rem;display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn-p" onclick="guardarMes()">Guardar y sincronizar</button>
       <button class="btn" onclick="limpiarFormMes()">Limpiar</button>
-      <button class="btn btn-danger" id="btn-borrar-mes" style="display:none" onclick="borrarMes()">Borrar este mes</button>
+      <button class="btn-danger" id="btn-borrar-mes" style="display:none" onclick="borrarMes()">Borrar este mes</button>
     </div>
   </div>
   <div class="card">
@@ -309,7 +292,6 @@ BTC,2024-12-31,93429"></textarea>
   </div>
 </div>
 
-<!-- CARGAR INVERSIÓN -->
 <div id="page-cargar-mov" class="page">
   <div class="page-header"><div class="page-title">Cargar movimiento de inversión</div></div>
   <div id="alert-mov"></div>
@@ -346,7 +328,6 @@ BTC,2024-12-31,93429"></textarea>
   </div>
 </div>
 
-<!-- CARGAR EFECTIVO -->
 <div id="page-cargar-ef" class="page">
   <div class="page-header"><div class="page-title">Movimiento de efectivo</div></div>
   <div id="alert-ef"></div>
@@ -387,7 +368,6 @@ BTC,2024-12-31,93429"></textarea>
   </div>
 </div>
 
-<!-- CARGAR DEUDA -->
 <div id="page-cargar-deuda" class="page">
   <div class="page-header"><div class="page-title">Registrar deuda</div></div>
   <div id="alert-deuda"></div>
@@ -408,7 +388,6 @@ BTC,2024-12-31,93429"></textarea>
   </div>
 </div>
 
-<!-- CONFIG -->
 <div id="page-config" class="page">
   <div class="page-header"><div class="page-title">Configuración</div></div>
   <div class="card">
@@ -421,7 +400,6 @@ BTC,2024-12-31,93429"></textarea>
   </div>
   <div class="card">
     <div class="sec">Saldos iniciales</div>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Se usan como punto de partida si no hay meses cargados.</p>
     <div class="fg3">
       <div class="frow"><label class="fl">Cuenta € inicial</label><div class="iuwu"><input type="number" id="cfg-saldo-ini-eur"><div class="unit">€</div></div></div>
       <div class="frow"><label class="fl">Efectivo € inicial</label><div class="iuwu"><input type="number" id="cfg-ef-ini-eur"><div class="unit">€</div></div></div>
@@ -444,10 +422,10 @@ BTC,2024-12-31,93429"></textarea>
   <div class="card">
     <div class="sec">PIN de acceso</div>
     <div class="fg2">
-      <div class="frow"><label class="fl">Cambiar PIN (4 dígitos)</label><div class="iuwu"><input type="password" id="cfg-pin-nuevo" maxlength="4" inputmode="numeric" placeholder="••••"><div class="unit">PIN</div></div></div>
+      <div class="frow"><label class="fl">Nuevo PIN (4 dígitos)</label><div class="iuwu"><input type="password" id="cfg-pin-nuevo" maxlength="4" inputmode="numeric" placeholder="••••"><div class="unit">PIN</div></div></div>
       <div class="frow"><label class="fl">Confirmar PIN</label><div class="iuwu"><input type="password" id="cfg-pin-conf" maxlength="4" inputmode="numeric" placeholder="••••"><div class="unit">PIN</div></div></div>
     </div>
-    <div style="margin-top:1rem"><button class="btn-p" onclick="cambiarPin()">Guardar PIN</button></div>
+    <div style="margin-top:1rem"><button class="btn-p" onclick="cambiarPin()">Cambiar PIN</button></div>
     <div id="alert-pin" style="margin-top:8px"></div>
   </div>
   <div class="card">
@@ -466,11 +444,7 @@ BTC,2024-12-31,93429"></textarea>
 <script>
 const SCRIPT_URL='https://script.google.com/macros/s/AKfycbyL4eRvvOwvA2T6Mki_Xl75kdTo6vOkImQxU7qA9T2jp8X73MRKa0i9vQ6bGJykvDDYyg/exec';
 const SK='finanzas_v3';
-let DB={
-  meses:[],movimientos:[],efectivo:[],deudas:[],precios:[],
-  config:{tcEur:1.16,tcArs:1200,saldoIniEur:0,efIniEur:0,efIniUsd:0,ingFijo:2386,gastoFijo:1300,invFija:500,tcRef:1.16},
-  pin:'1234'
-};
+let DB={meses:[],movimientos:[],efectivo:[],deudas:[],precios:[],config:{tcEur:1.16,tcArs:1200,saldoIniEur:0,efIniEur:0,efIniUsd:0,ingFijo:2386,gastoFijo:1300,invFija:500,tcRef:1.16},pin:'1234'};
 let evoChartInst=null,syncTimer=null,editMes=null;
 
 // ── SYNC ────────────────────────────────────────────────
@@ -482,10 +456,7 @@ function setSyncStatus(s,m){
 async function loadFromSheet(){
   try{
     setSyncStatus('loading','Cargando...');
-    const controller=new AbortController();
-    const timeout=setTimeout(()=>controller.abort(),5000);
-    const r=await fetch(SCRIPT_URL+'?t='+Date.now(),{signal:controller.signal});
-    clearTimeout(timeout);
+    const r=await fetch(SCRIPT_URL+'?t='+Date.now());
     const text=await r.text();
     if(text&&text!=='{}'){
       const p=JSON.parse(text);
@@ -494,12 +465,13 @@ async function loadFromSheet(){
         if(!DB.precios)DB.precios=[];
         if(!DB.efectivo)DB.efectivo=[];
         if(!DB.pin)DB.pin='1234';
+        if(!DB.config)DB.config={tcEur:1.16,tcArs:1200,saldoIniEur:0,efIniEur:0,efIniUsd:0,ingFijo:2386,gastoFijo:1300,invFija:500,tcRef:1.16};
       }
     }
     try{localStorage.setItem(SK,JSON.stringify(DB));}catch(e){}
     setSyncStatus('ok','Sincronizado');
   }catch(e){
-    setSyncStatus('err','Sin conexión — usando datos locales');
+    setSyncStatus('err','Sin conexión');
     try{
       const c=localStorage.getItem(SK);
       if(c){
@@ -524,49 +496,28 @@ function debouncedSave(){clearTimeout(syncTimer);syncTimer=setTimeout(saveToShee
 async function syncNow(){await loadFromSheet();renderCurrentPage();}
 
 // ── LOGIN ───────────────────────────────────────────────
-function doLogin(){
-  const pin=document.getElementById('pin-field').value.trim();
-  const pinGuardado=DB.pin||'1234';
-  if(pin===pinGuardado){
+function tryLogin(){
+  const pin=document.getElementById('pinInput').value;
+  const saved=DB.pin||'1234';
+  if(pin===saved){
     document.getElementById('loginBox').style.display='none';
     document.getElementById('appRoot').style.opacity='1';
     renderDash();
   } else {
-    document.getElementById('loginErr').textContent='PIN incorrecto (intentaste: '+pin+', guardado: '+pinGuardado+')';
-    document.getElementById('pin-field').value='';
-    document.getElementById('pin-field').focus();
-    setTimeout(()=>document.getElementById('loginErr').textContent='',4000);
+    document.getElementById('pinErr').textContent='PIN incorrecto';
+    document.getElementById('pinInput').value='';
+    document.getElementById('pinInput').focus();
+    setTimeout(()=>{const e=document.getElementById('pinErr');if(e)e.textContent='';},2000);
   }
-}
-async function initLogin(){
-  document.getElementById('loading').style.display='flex';
-  try{
-    const controller=new AbortController();
-    setTimeout(()=>controller.abort(),6000);
-    setSyncStatus('loading','Cargando...');
-    const r=await fetch(SCRIPT_URL+'?t='+Date.now(),{signal:controller.signal});
-    const text=await r.text();
-    if(text&&text!=='{}'){
-      const p=JSON.parse(text);
-      if(p&&!p.error){DB=p;if(!DB.precios)DB.precios=[];if(!DB.efectivo)DB.efectivo=[];if(!DB.pin)DB.pin='1234';}
-    }
-    try{localStorage.setItem(SK,JSON.stringify(DB));}catch(e){}
-    setSyncStatus('ok','Sincronizado');
-  }catch(e){
-    setSyncStatus('err','Sin conexión');
-    try{const c=localStorage.getItem(SK);if(c){DB=JSON.parse(c);if(!DB.precios)DB.precios=[];if(!DB.efectivo)DB.efectivo=[];if(!DB.pin)DB.pin='1234';}}catch(e2){}
-  }
-  document.getElementById('loading').style.display='none';
-  document.getElementById('loginBox').style.display='flex';
-  setTimeout(()=>{const f=document.getElementById('pin-field');if(f)f.focus();},200);
 }
 function cambiarPin(){
   const n=document.getElementById('cfg-pin-nuevo').value;
   const c=document.getElementById('cfg-pin-conf').value;
-  if(n.length!==4||!/^\d{4}$/.test(n)){showAlert('alert-pin','El PIN debe tener exactamente 4 dígitos','err');return;}
+  if(!/^\d{4}$/.test(n)){showAlert('alert-pin','El PIN debe tener exactamente 4 dígitos numéricos','err');return;}
   if(n!==c){showAlert('alert-pin','Los PINs no coinciden','err');return;}
-  DB.pin=n;debouncedSave();showAlert('alert-pin','PIN actualizado','ok');
-  document.getElementById('cfg-pin-nuevo').value='';document.getElementById('cfg-pin-conf').value='';
+  DB.pin=n;debouncedSave();showAlert('alert-pin','PIN actualizado correctamente','ok');
+  document.getElementById('cfg-pin-nuevo').value='';
+  document.getElementById('cfg-pin-conf').value='';
 }
 
 // ── HELPERS ─────────────────────────────────────────────
@@ -575,7 +526,11 @@ function fmtE(n){return'€'+Number(n||0).toLocaleString('es-AR',{minimumFractio
 function fmtM(n,cur){return(cur==='USD'?'$':'€')+Math.abs(Number(n||0)).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function pct(n,dec=1){const v=Number(n||0);return(v>=0?'+':'')+v.toFixed(dec)+'%';}
 function mesLabel(ym){const[y,m]=ym.split('-');const ms=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return ms[parseInt(m)-1]+' '+y;}
-
+function showAlert(id,msg,type){
+  const el=document.getElementById(id);if(!el)return;
+  el.innerHTML=`<div class="alert alert-${type==='ok'?'ok':'err'}">${msg}</div>`;
+  setTimeout(()=>{if(el)el.innerHTML='';},4000);
+}
 function nav(page,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -603,31 +558,23 @@ function switchTab(btn,tabId){
   if(target)target.style.display='block';
   if(tabId==='itab-precios')renderTablaPrecios();
 }
-function showAlert(id,msg,type){
-  const el=document.getElementById(id);if(!el)return;
-  el.innerHTML=`<div class="alert alert-${type==='ok'?'ok':'err'}">${msg}</div>`;
-  setTimeout(()=>{if(el)el.innerHTML='';},4000);
-}
 
-// ── PRECIOS HISTÓRICOS ───────────────────────────────────
-function getPrecio(nombre,fecha){
-  // Busca el precio más reciente para ese activo en o antes de la fecha dada
-  const relevant=(DB.precios||[]).filter(p=>p.activo===nombre&&p.fecha<=fecha);
-  if(!relevant.length)return null;
-  relevant.sort((a,b)=>b.fecha.localeCompare(a.fecha));
-  return relevant[0].precio;
-}
+// ── PRECIOS ──────────────────────────────────────────────
 function getPrecioMes(nombre,yearMonth){
-  // yearMonth = 'YYYY-MM', busca el cierre del último día de ese mes
   const relevant=(DB.precios||[]).filter(p=>p.activo===nombre&&p.fecha.substring(0,7)===yearMonth);
   if(relevant.length){relevant.sort((a,b)=>b.fecha.localeCompare(a.fecha));return relevant[0].precio;}
-  // si no hay exacto, busca el más reciente anterior
   const anterior=(DB.precios||[]).filter(p=>p.activo===nombre&&p.fecha<yearMonth+'-01');
   if(!anterior.length)return null;
   anterior.sort((a,b)=>b.fecha.localeCompare(a.fecha));
   return anterior[0].precio;
 }
-
+function getPrecioActual(nombre){
+  const today=new Date().toISOString().slice(0,10);
+  const relevant=(DB.precios||[]).filter(p=>p.activo===nombre&&p.fecha<=today);
+  if(!relevant.length)return null;
+  relevant.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  return relevant[0].precio;
+}
 function importarPrecios(){
   const raw=document.getElementById('precios-csv').value.trim();
   if(!raw)return;
@@ -638,7 +585,6 @@ function importarPrecios(){
     if(p.length<3){err++;return;}
     const[activo,fecha,precio]=p;
     if(!activo||!fecha||!precio){err++;return;}
-    // Sobreescribir si ya existe
     const idx=(DB.precios||[]).findIndex(x=>x.activo===activo&&x.fecha===fecha);
     if(idx>=0)DB.precios[idx]={activo,fecha,precio:parseFloat(precio)};
     else{if(!DB.precios)DB.precios=[];DB.precios.push({activo,fecha,precio:parseFloat(precio)});}
@@ -654,7 +600,7 @@ function renderTablaPrecios(){
   const tbody=document.getElementById('tbody-precios');
   if(!DB.precios||!DB.precios.length){tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text3)">Sin precios cargados</td></tr>';return;}
   const sorted=[...DB.precios].sort((a,b)=>b.fecha.localeCompare(a.fecha)||a.activo.localeCompare(b.activo));
-  tbody.innerHTML=sorted.map((p,i)=>{
+  tbody.innerHTML=sorted.map(p=>{
     const idx=DB.precios.indexOf(p);
     return`<tr><td>${p.activo}</td><td>${p.fecha}</td><td style="text-align:right">${fmt(p.precio)}</td><td><button class="btn-danger" onclick="borrarPrecio(${idx})">✕</button></td></tr>`;
   }).join('');
@@ -663,11 +609,8 @@ function borrarPrecio(idx){DB.precios.splice(idx,1);debouncedSave();renderTablaP
 
 // ── MOTOR DE INVERSIONES ─────────────────────────────────
 function calcPosiciones(){
-  const movs=[...DB.movimientos].sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  const estado={};
-  const cerradas=[];
-  const rentAnual={};
-
+  const movs=[...( DB.movimientos||[])].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const estado={};const cerradas=[];const rentAnual={};
   movs.forEach(m=>{
     const nombre=m.nombre||m.producto||'?';
     const tipo=(m.tipo||'').toLowerCase();
@@ -675,15 +618,10 @@ function calcPosiciones(){
     const montoUSD=Number(m.montoUSD);
     const anio=m.fecha.substring(0,4);
     if(!rentAnual[anio])rentAnual[anio]={anio,realizadoUSD:0,comprasUSD:0,ventasUSD:0};
-
     if(tipo==='compra'){
       rentAnual[anio].comprasUSD+=montoUSD;
-      if(!estado[nombre]){
-        estado[nombre]={nombre,categoria:m.categoria||'otro',cantidad,costoTotalUSD:montoUSD,fechaApertura:m.fecha,resultadoParcialUSD:0,cantidadVendidaUSD:0};
-      } else {
-        estado[nombre].cantidad+=cantidad;
-        estado[nombre].costoTotalUSD+=montoUSD;
-      }
+      if(!estado[nombre])estado[nombre]={nombre,categoria:m.categoria||'otro',cantidad,costoTotalUSD:montoUSD,fechaApertura:m.fecha,resultadoParcialUSD:0,cantidadVendidaUSD:0};
+      else{estado[nombre].cantidad+=cantidad;estado[nombre].costoTotalUSD+=montoUSD;}
     } else {
       rentAnual[anio].ventasUSD+=montoUSD;
       if(!estado[nombre])return;
@@ -694,74 +632,55 @@ function calcPosiciones(){
       rentAnual[anio].realizadoUSD+=resultadoUSD;
       const cantidadRestante=pos.cantidad-cantidad;
       if(cantidadRestante<=0.000001){
-        cerradas.push({
-          nombre:pos.nombre,categoria:pos.categoria,
-          costoUSD:pos.costoTotalUSD,
-          ventaUSD:montoUSD+(pos.cantidadVendidaUSD||0),
-          resultado:resultadoUSD+(pos.resultadoParcialUSD||0),
-          anio,fechaApertura:pos.fechaApertura,fechaCierre:m.fecha
-        });
+        cerradas.push({nombre:pos.nombre,categoria:pos.categoria,costoUSD:pos.costoTotalUSD,ventaUSD:montoUSD+(pos.cantidadVendidaUSD||0),resultado:resultadoUSD+(pos.resultadoParcialUSD||0),anio,fechaApertura:pos.fechaApertura,fechaCierre:m.fecha});
         delete estado[nombre];
       } else {
-        pos.cantidad=cantidadRestante;
-        pos.costoTotalUSD-=costoVendidoUSD;
+        pos.cantidad=cantidadRestante;pos.costoTotalUSD-=costoVendidoUSD;
         pos.cantidadVendidaUSD=(pos.cantidadVendidaUSD||0)+montoUSD;
         pos.resultadoParcialUSD=(pos.resultadoParcialUSD||0)+resultadoUSD;
       }
     }
   });
-
-  // Calcular variación no realizada por año usando precios históricos
-  // Para cada año, calcular el valor al inicio y fin del año de posiciones abiertas en ese momento
-  // Simplificado: sumar variación anual a rentAnual
-  const rentAnualArr=Object.values(rentAnual).sort((a,b)=>b.anio-a.anio);
-
-  return{abiertas:Object.values(estado),cerradas,rentAnual:rentAnualArr};
+  return{abiertas:Object.values(estado),cerradas,rentAnual:Object.values(rentAnual).sort((a,b)=>b.anio-a.anio)};
 }
 
-function calcValorInvHoy(){
-  const c=DB.config;
-  const{abiertas}=calcPosiciones();
-  let total=0;
-  abiertas.forEach(p=>{
-    const precio=getPrecio(p.nombre,new Date().toISOString().slice(0,10));
-    if(precio)total+=p.cantidad*precio;
-    // si no hay precio histórico, usamos costo como fallback
-    else total+=p.costoTotalUSD;
-  });
-  return total;
-}
-
-function calcValorInvEnFecha(yearMonth){
-  // Calcula el valor de todas las posiciones abiertas al cierre de un mes
-  const mesEnd=yearMonth+'-31';// aproximación
-  const movs=[...DB.movimientos].filter(m=>m.fecha<=mesEnd).sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  const estado={};
-  movs.forEach(m=>{
-    const nombre=m.nombre||m.producto||'?';
-    const tipo=(m.tipo||'').toLowerCase();
-    const cantidad=Number(m.cantidad);
-    const montoUSD=Number(m.montoUSD);
-    if(tipo==='compra'){
-      if(!estado[nombre])estado[nombre]={nombre,cantidad,costoTotalUSD:montoUSD};
-      else{estado[nombre].cantidad+=cantidad;estado[nombre].costoTotalUSD+=montoUSD;}
+function calcValorCarteraEnMes(ym){
+  const mesEnd=ym+'-31';
+  const movsFiltrados=[...(DB.movimientos||[])].filter(m=>m.fecha<=mesEnd).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const est={};
+  movsFiltrados.forEach(m=>{
+    const n=m.nombre||m.producto||'?';
+    const t=(m.tipo||'').toLowerCase();
+    const q=Number(m.cantidad),usd=Number(m.montoUSD);
+    if(t==='compra'){
+      if(!est[n])est[n]={nombre:n,cantidad:q,costoTotalUSD:usd};
+      else{est[n].cantidad+=q;est[n].costoTotalUSD+=usd;}
     } else {
-      if(!estado[nombre])return;
-      const pos=estado[nombre];
-      const resto=pos.cantidad-cantidad;
-      if(resto<=0.000001)delete estado[nombre];
-      else{const pp=pos.costoTotalUSD/pos.cantidad;pos.cantidad=resto;pos.costoTotalUSD-=pp*cantidad;}
+      if(!est[n])return;
+      const rest=est[n].cantidad-q;
+      if(rest<=0.000001)delete est[n];
+      else{const pp=est[n].costoTotalUSD/est[n].cantidad;est[n].cantidad=rest;est[n].costoTotalUSD-=pp*q;}
     }
   });
   let total=0;
-  Object.values(estado).forEach(p=>{
-    const precio=getPrecioMes(p.nombre,yearMonth);
-    total+=precio?p.cantidad*precio:p.costoTotalUSD;
+  Object.values(est).forEach(p=>{
+    const precio=getPrecioMes(p.nombre,ym);
+    total+=precio!=null?p.cantidad*precio:p.costoTotalUSD;
   });
   return total;
 }
 
-// ── EFECTIVO ─────────────────────────────────────────────
+function calcValorInvHoy(){
+  const{abiertas}=calcPosiciones();
+  let total=0;
+  abiertas.forEach(p=>{
+    const precio=getPrecioActual(p.nombre);
+    total+=precio!=null?p.cantidad*precio:p.costoTotalUSD;
+  });
+  return total;
+}
+
+// ── EFECTIVO & PATRIMONIO ────────────────────────────────
 function calcEfectivo(){
   const c=DB.config;
   let efEur=c.efIniEur||0,efUsd=c.efIniUsd||0;
@@ -774,11 +693,9 @@ function calcEfectivo(){
 }
 function calcCuentaEur(){
   const c=DB.config;
-  if(DB.meses.length){const u=DB.meses[DB.meses.length-1];return{saldoEur:u.saldoEur||0,mes:u.mes};}
+  if(DB.meses&&DB.meses.length){const u=DB.meses[DB.meses.length-1];return{saldoEur:u.saldoEur||0,mes:u.mes};}
   return{saldoEur:c.saldoIniEur||0,mes:'inicial'};
 }
-
-// ── PATRIMONIO ───────────────────────────────────────────
 function calcPatrimonio(){
   const c=DB.config;
   const cuenta=calcCuentaEur();
@@ -804,7 +721,6 @@ function bar(label,ratio,val,color){
     ${w<=20?`<span style="font-size:11px;color:var(--text2)">${val}</span>`:''}
   </div>`;
 }
-
 function renderDash(){
   const p=calcPatrimonio();
   document.getElementById('dash-fecha').textContent=new Date().toLocaleDateString('es-AR',{day:'numeric',month:'long',year:'numeric'});
@@ -813,7 +729,6 @@ function renderDash(){
     <div class="mc"><div class="mc-label">Liquidez</div><div class="mc-value">${fmt(p.liquidezUSD)}</div><div class="mc-sub">cuenta + efectivo</div></div>
     <div class="mc"><div class="mc-label">Inversiones</div><div class="mc-value">${fmt(p.invUSD)}</div><div class="mc-sub">posiciones abiertas</div></div>
     <div class="mc"><div class="mc-label">Deudas netas</div><div class="mc-value" style="color:var(--${p.cobrar-p.pagar>=0?'success':'danger'})">${fmt(p.cobrar-p.pagar)}</div><div class="mc-sub">a cobrar − a pagar</div></div>`;
-
   const maxV=Math.max(p.cuentaUSD,p.ef.efEur*(DB.config.tcEur||1),p.ef.efUsd,p.invUSD,p.cobrar,1);
   document.getElementById('dash-desglose').innerHTML=
     bar('Cuenta €',p.cuentaUSD/maxV,fmt(p.cuentaUSD),'#378ADD')+
@@ -821,8 +736,7 @@ function renderDash(){
     bar('Efectivo USD',p.ef.efUsd/maxV,fmt(p.ef.efUsd),'#85B7EB')+
     bar('Inversiones',p.invUSD/maxV,fmt(p.invUSD),'#1D9E75')+
     bar('A cobrar',p.cobrar/maxV,fmt(p.cobrar),'#B5D4F4');
-
-  const ultimo=DB.meses.length?DB.meses[DB.meses.length-1]:null;
+  const ultimo=DB.meses&&DB.meses.length?DB.meses[DB.meses.length-1]:null;
   if(ultimo){
     const tcE=ultimo.tcEur||1,tcA=ultimo.tcArs||1;
     const ingUSD=((ultimo.ingEur||0)+(ultimo.ingOtros||0))*tcE;
@@ -839,15 +753,11 @@ function renderDash(){
   } else {
     document.getElementById('dash-ultimo-mes').innerHTML='<div class="empty">Cargá tu primer mes</div>';
   }
-
-  // Gráfico de evolución patrimonial
-  const sorted=[...DB.meses].sort((a,b)=>a.mes.localeCompare(b.mes));
+  const sorted=[...(DB.meses||[])].sort((a,b)=>a.mes.localeCompare(b.mes));
   const labels=sorted.map(m=>mesLabel(m.mes));
-  const c=DB.config;
   const valsLiq=sorted.map(m=>Math.round((m.saldoEur||0)*(m.tcEur||1)));
-  const valsInv=sorted.map(m=>Math.round(calcValorInvEnFecha(m.mes)));
+  const valsInv=sorted.map(m=>Math.round(calcValorCarteraEnMes(m.mes)));
   const valsTotal=sorted.map((m,i)=>valsLiq[i]+valsInv[i]);
-
   const ctx=document.getElementById('evoChart').getContext('2d');
   if(evoChartInst)evoChartInst.destroy();
   const isDark=window.matchMedia('(prefers-color-scheme:dark)').matches;
@@ -861,14 +771,12 @@ function renderDash(){
 
 // ── LIQUIDEZ ─────────────────────────────────────────────
 function renderLiquidez(){
-  const p=calcPatrimonio();
-  const c=DB.config;
+  const p=calcPatrimonio();const c=DB.config;
   document.getElementById('liq-metrics').innerHTML=`
     <div class="mc"><div class="mc-label">Liquidez total</div><div class="mc-value">${fmt(p.liquidezUSD)}</div><div class="mc-sub">cuenta + efectivo</div></div>
     <div class="mc"><div class="mc-label">Cuenta €</div><div class="mc-value">${fmt(p.cuentaUSD)}</div><div class="mc-sub">${fmtE(p.cuentaUSD/(c.tcEur||1))} × ${c.tcEur}</div></div>
     <div class="mc"><div class="mc-label">Efectivo físico</div><div class="mc-value">${fmt(p.ef.totalUSD)}</div><div class="mc-sub">${fmtE(p.ef.efEur)} + ${fmt(p.ef.efUsd)} USD</div></div>`;
-
-  const sorted=[...DB.meses].sort((a,b)=>b.mes.localeCompare(a.mes));
+  const sorted=[...(DB.meses||[])].sort((a,b)=>b.mes.localeCompare(a.mes));
   if(!sorted.length){document.getElementById('liq-cuenta-eur').innerHTML='<div class="empty">Sin meses cargados</div>';}
   else{
     let html='<table><thead><tr><th>Mes</th><th style="text-align:right">Saldo €</th><th style="text-align:right">Equiv. USD</th></tr></thead><tbody>';
@@ -876,7 +784,6 @@ function renderLiquidez(){
     html+='</tbody></table>';
     document.getElementById('liq-cuenta-eur').innerHTML=html;
   }
-
   const ef=calcEfectivo();
   const movEf=[...(DB.efectivo||[])].sort((a,b)=>b.fecha.localeCompare(a.fecha));
   let htmlEf=`
@@ -896,7 +803,7 @@ function renderLiquidez(){
 
 // ── MES A MES ────────────────────────────────────────────
 function renderMensual(){
-  const sorted=[...DB.meses].sort((a,b)=>b.mes.localeCompare(a.mes));
+  const sorted=[...(DB.meses||[])].sort((a,b)=>b.mes.localeCompare(a.mes));
   const tbody=document.getElementById('tbody-mensual');
   if(!sorted.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px">No hay meses cargados</td></tr>';return;}
   tbody.innerHTML=sorted.map(m=>{
@@ -917,7 +824,6 @@ function renderMensual(){
       <td style="color:var(--text3);font-size:12px">${m.comentario||''}</td>
     </tr>`;
   }).join('');
-
   const c=DB.config,tcE=c.tcRef||1.16;
   const ingFijoUSD=(c.ingFijo||0)*tcE,gastoFijoUSD=(c.gastoFijo||0)*tcE,invUSD=(c.invFija||0)*tcE;
   const ahoEst=ingFijoUSD-gastoFijoUSD-invUSD;
@@ -927,9 +833,8 @@ function renderMensual(){
     <div class="row-item"><span class="rl">Inversión mensual estimada</span><span class="rv" style="color:var(--info)">-${fmt(invUSD)}</span></div>
     <div class="row-item"><span class="rl" style="font-weight:500">Ahorro estimado</span><span class="rv" style="font-size:16px;color:var(--${ahoEst>=0?'success':'danger'})">${fmt(ahoEst)}</span></div>`;
 }
-
 function editarMes(mes){
-  const m=DB.meses.find(x=>x.mes===mes);if(!m)return;
+  const m=(DB.meses||[]).find(x=>x.mes===mes);if(!m)return;
   editMes=mes;
   document.getElementById('form-mes-titulo').textContent='Editar mes — '+mesLabel(mes);
   document.getElementById('m-mes').value=mes;
@@ -942,11 +847,10 @@ function editarMes(mes){
   document.getElementById('m-saldo-eur').value=m.saldoEur||'';
   document.getElementById('m-comentario').value=m.comentario||'';
   document.getElementById('btn-borrar-mes').style.display='inline-block';
-  nav('cargar-mes',document.querySelector('.nav-item:nth-child(7)'));
+  nav('cargar-mes',null);
 }
-
 function borrarMes(){
-  if(!editMes||!confirm('¿Borrar el mes '+mesLabel(editMes)+'? No se puede deshacer.'))return;
+  if(!editMes||!confirm('¿Borrar el mes '+mesLabel(editMes)+'?'))return;
   DB.meses=DB.meses.filter(m=>m.mes!==editMes);
   debouncedSave();limpiarFormMes();
   showAlert('alert-mes','Mes borrado','ok');
@@ -956,18 +860,15 @@ function borrarMes(){
 // ── INVERSIONES ──────────────────────────────────────────
 function renderInv(){
   const{abiertas,cerradas,rentAnual}=calcPosiciones();
-  const c=DB.config;
-
   const totComp=(DB.movimientos||[]).filter(m=>(m.tipo||'').toLowerCase()==='compra').reduce((a,m)=>a+Number(m.montoUSD),0);
-  const totRealizado=rentAnual.reduce((a,r)=>a+r.realizadoUSD,0);
+  const totVentas=(DB.movimientos||[]).filter(m=>(m.tipo||'').toLowerCase()==='venta').reduce((a,m)=>a+Number(m.montoUSD),0);
   const valorAbiertas=calcValorInvHoy();
-  const noRealizado=valorAbiertas-abiertas.reduce((a,p)=>a+p.costoTotalUSD,0);
-  const rentTotal=totComp>0?((totRealizado+noRealizado)/totComp*100):0;
+  const gananciaTotal=valorAbiertas+totVentas-totComp;
 
   document.getElementById('inv-metrics').innerHTML=`
     <div class="mc"><div class="mc-label">Total comprado (histórico)</div><div class="mc-value">${fmt(totComp)}</div><div class="mc-sub">suma de todas las compras</div></div>
     <div class="mc"><div class="mc-label">Valor posiciones abiertas</div><div class="mc-value">${fmt(valorAbiertas)}</div><div class="mc-sub">a precio actual</div></div>
-    <div class="mc"><div class="mc-label">Ganancia neta total</div><div class="mc-value" style="color:var(--${(totRealizado+noRealizado)>=0?'success':'danger'})">${(totRealizado+noRealizado)>=0?'+':''}${fmt(totRealizado+noRealizado)}</div><div class="mc-sub">ver detalle en Rentabilidad anual</div></div>`;
+    <div class="mc"><div class="mc-label">Ganancia neta total</div><div class="mc-value" style="color:var(--${gananciaTotal>=0?'success':'danger'})">${gananciaTotal>=0?'+':''}${fmt(gananciaTotal)}</div><div class="mc-sub">ver detalle en Rentabilidad anual</div></div>`;
 
   // Posiciones abiertas
   let htmlAb='';
@@ -976,18 +877,16 @@ function renderInv(){
     htmlAb='<table style="min-width:600px"><thead><tr><th>Activo</th><th style="text-align:right">Cantidad</th><th style="text-align:right">Entrada prom.</th><th style="text-align:right">Precio actual</th><th style="text-align:right">Valor hoy</th><th style="text-align:right">Resultado</th><th style="text-align:right">Rentab.</th></tr></thead><tbody>';
     abiertas.forEach(p=>{
       const precioEnt=p.cantidad>0?p.costoTotalUSD/p.cantidad:0;
-      const precioHoy=getPrecio(p.nombre,new Date().toISOString().slice(0,10));
-      const valHoy=precioHoy?p.cantidad*precioHoy:p.costoTotalUSD;
+      const precioHoy=getPrecioActual(p.nombre);
+      const valHoy=precioHoy!=null?p.cantidad*precioHoy:p.costoTotalUSD;
       const res=valHoy-p.costoTotalUSD;
       const rPct=p.costoTotalUSD>0?(res/p.costoTotalUSD*100):0;
       const esBTC=p.nombre.toUpperCase()==='BTC';
-      const dec=esBTC?6:2;
-      const sinPrecio=!precioHoy;
       htmlAb+=`<tr>
-        <td><strong>${p.nombre}</strong>${sinPrecio?'<span style="font-size:10px;color:var(--danger)"> sin precio</span>':''}<br><span style="font-size:11px;color:var(--text3)">${p.categoria||''} · desde ${p.fechaApertura}</span></td>
-        <td style="text-align:right">${Number(p.cantidad).toFixed(dec)}</td>
+        <td><strong>${p.nombre}</strong>${precioHoy==null?'<span style="font-size:10px;color:var(--danger)"> sin precio</span>':''}<br><span style="font-size:11px;color:var(--text3)">${p.categoria||''} · desde ${p.fechaApertura}</span></td>
+        <td style="text-align:right">${Number(p.cantidad).toFixed(esBTC?6:2)}</td>
         <td style="text-align:right">${fmt(precioEnt)}</td>
-        <td style="text-align:right">${precioHoy?fmt(precioHoy):'—'}</td>
+        <td style="text-align:right">${precioHoy!=null?fmt(precioHoy):'—'}</td>
         <td style="text-align:right">${fmt(valHoy)}</td>
         <td style="text-align:right;color:var(--${res>=0?'success':'danger'})">${res>=0?'+':''}${fmt(res)}</td>
         <td style="text-align:right"><span class="badge ${rPct>=0?'bg':'br'}">${pct(rPct)}</span></td>
@@ -995,8 +894,6 @@ function renderInv(){
     });
     htmlAb+='</tbody></table>';
   }
-
-  // Posiciones cerradas
   let htmlCer='';
   if(cerradas.length){
     htmlCer='<div class="sec" style="margin-top:1.5rem">Posiciones cerradas</div>';
@@ -1016,78 +913,36 @@ function renderInv(){
   }
   document.getElementById('tabla-posiciones').innerHTML=htmlAb+htmlCer;
 
-  // Rentabilidad anual completa — todos los años desde 2022 hasta el actual
+  // Rentabilidad anual
   const anioActual=new Date().getFullYear();
   const anioInicio=2022;
   const aniosRange=Array.from({length:anioActual-anioInicio+1},(_,i)=>String(anioInicio+i));
 
-  function calcValorCarteraEnMes(ym){
-    // Valor de todas las posiciones abiertas al cierre del mes ym='YYYY-MM'
-    const mesEnd=ym+'-31';
-    const movsFiltrados=[...(DB.movimientos||[])].filter(m=>m.fecha<=mesEnd).sort((a,b)=>a.fecha.localeCompare(b.fecha));
-    const est={};
-    movsFiltrados.forEach(m=>{
-      const n=m.nombre||m.producto||'?';
-      const t=(m.tipo||'').toLowerCase();
-      const q=Number(m.cantidad),usd=Number(m.montoUSD);
-      if(t==='compra'){
-        if(!est[n])est[n]={nombre:n,cantidad:q,costoTotalUSD:usd};
-        else{est[n].cantidad+=q;est[n].costoTotalUSD+=usd;}
-      } else {
-        if(!est[n])return;
-        const rest=est[n].cantidad-q;
-        if(rest<=0.000001)delete est[n];
-        else{const pp=est[n].costoTotalUSD/est[n].cantidad;est[n].cantidad=rest;est[n].costoTotalUSD-=pp*q;}
-      }
-    });
-    let total=0;
-    Object.values(est).forEach(p=>{
-      const precio=getPrecioMes(p.nombre,ym);
-      total+=precio!=null?p.cantidad*precio:p.costoTotalUSD;
-    });
-    return total;
-  }
-
   function aportacionesNetas(anio){
-    // Compras - ventas del año en USD
     const movsAnio=(DB.movimientos||[]).filter(m=>m.fecha.startsWith(anio));
     const compras=movsAnio.filter(m=>(m.tipo||'').toLowerCase()==='compra').reduce((a,m)=>a+Number(m.montoUSD),0);
     const ventas=movsAnio.filter(m=>(m.tipo||'').toLowerCase()==='venta').reduce((a,m)=>a+Number(m.montoUSD),0);
     return compras-ventas;
   }
 
-  // Calcular rentabilidad acumulada desde inicio
-  const valorHoyAcum=calcValorInvHoy();
-  const totalComprasAcum=(DB.movimientos||[]).filter(m=>(m.tipo||'').toLowerCase()==='compra').reduce((a,m)=>a+Number(m.montoUSD),0);
-  const totalVentasAcum=(DB.movimientos||[]).filter(m=>(m.tipo||'').toLowerCase()==='venta').reduce((a,m)=>a+Number(m.montoUSD),0);
-  // Ganancia neta = valor actual + recuperado por ventas - total comprado
-  const gananciaAcum=valorHoyAcum+totalVentasAcum-totalComprasAcum;
-  // % simple y honesto: ganancia / total comprado
-  const rentAcumPct=totalComprasAcum>0?(gananciaAcum/totalComprasAcum*100):0;
-
   function calcRentAnioData(anio){
     const valIniRaw=calcValorCarteraEnMes((parseInt(anio)-1)+'-12');
     const aportes=aportacionesNetas(anio);
     const esteAnio=anio===String(anioActual);
     const valFin=esteAnio?calcValorInvHoy():calcValorCarteraEnMes(anio+'-12');
-    // Capital inicio: valor fin del año anterior.
-    // Caso especial: si es el primer año con actividad y no había nada antes,
-    // el capital inicio es la primera aportación (no $0).
     const hayActividadAnterior=valIniRaw>0;
     const primeraAportacion=Math.max(0,aportes);
     const valIni=hayActividadAnterior?valIniRaw:primeraAportacion;
-    // Capital en juego = lo que había al inicio + aportaciones del año
-    // Si arrancamos desde cero con aportación, el capital en juego ES esa aportación
     const capitalEnJuego=hayActividadAnterior?(valIniRaw+aportes):primeraAportacion;
-    // Resultado = valor fin - capital inicio - aportaciones del año
-    // Para el primer año sin historial: resultado = val fin - aportación
     const resultado=hayActividadAnterior?(valFin-valIniRaw-aportes):(valFin-primeraAportacion);
     const rentPct=capitalEnJuego>0?(resultado/capitalEnJuego*100):0;
     const sinDatos=valIni===0&&valFin===0&&aportes===0;
-    return{anio,valIni,aportes,valFin,resultado,rentPct,sinDatos,capitalEnJuego};
+    return{anio,valIni,aportes,valFin,resultado,rentPct,sinDatos};
   }
 
-  // TWRR encadenando solo años con actividad real
+  const totalComprasAcum=totComp;
+  const gananciaAcum=gananciaTotal;
+  const rentAcumPct=totalComprasAcum>0?(gananciaAcum/totalComprasAcum*100):0;
   const datosAnuales=aniosRange.map(a=>calcRentAnioData(a));
   const productoTWRR=datosAnuales.reduce((prod,d)=>d.sinDatos?prod:prod*(1+d.rentPct/100),1);
   const aniosConActividad=datosAnuales.filter(d=>!d.sinDatos).length;
@@ -1096,20 +951,12 @@ function renderInv(){
   let htmlA=`
     <div class="g4" style="margin-bottom:12px">
       <div class="mc"><div class="mc-label">Total comprado</div><div class="mc-value">${fmt(totalComprasAcum)}</div><div class="mc-sub">compras históricas</div></div>
-      <div class="mc"><div class="mc-label">Valor actual + recuperado</div><div class="mc-value">${fmt(valorHoyAcum+totalVentasAcum)}</div><div class="mc-sub">posiciones + ventas</div></div>
-      <div class="mc"><div class="mc-label">Ganancia neta</div><div class="mc-value" style="color:var(--${gananciaAcum>=0?'success':'danger'})">${gananciaAcum>=0?'+':''}${fmt(gananciaAcum)}</div><div class="mc-sub">${pct(rentAcumPct)} sobre lo invertido</div></div>
-      <div class="mc"><div class="mc-label">Rentab. anual promedio</div><div class="mc-value" style="color:var(--${twrr>=0?'success':'danger'})">${pct(twrr)}</div><div class="mc-sub">TWRR anualizado</div></div>
-    </div>
-
-  let htmlA=`
-    <div class="g4" style="margin-bottom:12px">
-      <div class="mc"><div class="mc-label">Total comprado</div><div class="mc-value">${fmt(totalComprasAcum)}</div><div class="mc-sub">compras históricas</div></div>
-      <div class="mc"><div class="mc-label">Valor actual + recuperado</div><div class="mc-value">${fmt(valorHoyAcum+totalVentasAcum)}</div><div class="mc-sub">posiciones + ventas</div></div>
+      <div class="mc"><div class="mc-label">Valor actual + recuperado</div><div class="mc-value">${fmt(valorAbiertas+totVentas)}</div><div class="mc-sub">posiciones + ventas</div></div>
       <div class="mc"><div class="mc-label">Ganancia neta</div><div class="mc-value" style="color:var(--${gananciaAcum>=0?'success':'danger'})">${gananciaAcum>=0?'+':''}${fmt(gananciaAcum)}</div><div class="mc-sub">${pct(rentAcumPct)} sobre lo invertido</div></div>
       <div class="mc"><div class="mc-label">Rentab. anual promedio</div><div class="mc-value" style="color:var(--${twrr>=0?'success':'danger'})">${pct(twrr)}</div><div class="mc-sub">TWRR anualizado</div></div>
     </div>
     <div class="card overflow-x">
-    <table style="min-width:600px"><thead><tr>
+    <table style="min-width:580px"><thead><tr>
       <th>Año</th>
       <th style="text-align:right">Capital inicio</th>
       <th style="text-align:right">Aportaciones netas</th>
@@ -1117,7 +964,6 @@ function renderInv(){
       <th style="text-align:right">Resultado USD</th>
       <th style="text-align:right">Rentab. %</th>
     </tr></thead><tbody>`;
-
   datosAnuales.forEach(d=>{
     const esteAnio=d.anio===String(anioActual);
     htmlA+=`<tr>
@@ -1141,7 +987,7 @@ function renderInv(){
     const esBTC=(m.nombre||'').toUpperCase()==='BTC';
     return`<tr>
       <td>${m.fecha}</td>
-      <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${m.nombre||m.producto||''}">${m.nombre||m.producto||''}</td>
+      <td style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${m.nombre||''}">${m.nombre||''}</td>
       <td><span class="badge ${(m.tipo||'').toLowerCase()==='compra'?'bb':'bg'}">${m.tipo}</span></td>
       <td style="text-align:right">${Number(m.cantidad).toFixed(esBTC?6:2)}</td>
       <td style="text-align:right">${Number(m.tc||0).toFixed(3)}</td>
@@ -1177,17 +1023,16 @@ function guardarMes(){
   const mes=document.getElementById('m-mes').value;
   const tcEur=parseFloat(document.getElementById('m-tc-eur').value)||0;
   if(!mes||!tcEur){showAlert('alert-mes','Completá el mes y el TC EUR/USD','err');return;}
-  const obj={mes,tcEur,
-    tcArs:parseFloat(document.getElementById('m-tc-ars').value)||0,
+  const obj={mes,tcEur,tcArs:parseFloat(document.getElementById('m-tc-ars').value)||0,
     ingEur:parseFloat(document.getElementById('m-ing-eur').value)||0,
     ingOtros:parseFloat(document.getElementById('m-ing-otros').value)||0,
     gastoEur:parseFloat(document.getElementById('m-gasto-eur').value)||0,
     gastoArs:parseFloat(document.getElementById('m-gasto-ars').value)||0,
     saldoEur:parseFloat(document.getElementById('m-saldo-eur').value)||0,
     comentario:document.getElementById('m-comentario').value.trim()};
+  if(!DB.meses)DB.meses=[];
   const idx=DB.meses.findIndex(m=>m.mes===mes);
-  if(idx>=0)DB.meses[idx]=obj;
-  else DB.meses.push(obj);
+  if(idx>=0)DB.meses[idx]=obj;else DB.meses.push(obj);
   DB.meses.sort((a,b)=>a.mes.localeCompare(b.mes));
   debouncedSave();showAlert('alert-mes','Mes guardado','ok');limpiarFormMes();
 }
@@ -1195,9 +1040,7 @@ function limpiarFormMes(){
   editMes=null;
   document.getElementById('form-mes-titulo').textContent='Cargar mes';
   document.getElementById('btn-borrar-mes').style.display='none';
-  ['m-ing-eur','m-ing-otros','m-gasto-eur','m-gasto-ars','m-saldo-eur','m-comentario','m-tc-ars'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('m-mes').value='';
-  document.getElementById('m-tc-eur').value='';
+  ['m-mes','m-tc-eur','m-tc-ars','m-ing-eur','m-ing-otros','m-gasto-eur','m-gasto-ars','m-saldo-eur','m-comentario'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
 }
 function importarCSVMeses(){
   const raw=document.getElementById('m-csv').value.trim();
@@ -1210,15 +1053,13 @@ function importarCSVMeses(){
     const mes=p[0],tc_eur=p[1],ing_eur=p[2]||'0',gasto_eur=p[3]||'0',saldo_eur=p[4]||'0';
     const comentario=p.slice(5).join(',').trim();
     if(!mes||!tc_eur||!/^\d{4}-\d{2}$/.test(mes)){err++;return;}
-    const obj={mes,tcEur:parseFloat(tc_eur)||1.16,tcArs:0,
-      ingEur:parseFloat(ing_eur)||0,ingOtros:0,
-      gastoEur:parseFloat(gasto_eur)||0,gastoArs:0,
-      saldoEur:parseFloat(saldo_eur)||0,comentario};
+    const obj={mes,tcEur:parseFloat(tc_eur)||1.16,tcArs:0,ingEur:parseFloat(ing_eur)||0,ingOtros:0,gastoEur:parseFloat(gasto_eur)||0,gastoArs:0,saldoEur:parseFloat(saldo_eur)||0,comentario};
+    if(!DB.meses)DB.meses=[];
     const idx=DB.meses.findIndex(m=>m.mes===mes);
     if(idx>=0){DB.meses[idx]=obj;sobre++;}else DB.meses.push(obj);
     ok++;
   });
-  DB.meses.sort((a,b)=>a.mes.localeCompare(b.mes));
+  if(DB.meses)DB.meses.sort((a,b)=>a.mes.localeCompare(b.mes));
   debouncedSave();
   showAlert('alert-mes',`${ok} meses importados${sobre?' ('+sobre+' sobreescritos)':''}${err?' · '+err+' errores':''}`,err&&!ok?'err':'ok');
   document.getElementById('m-csv').value='';
@@ -1262,7 +1103,7 @@ function importarCSV(){
     DB.movimientos.push({fecha,nombre,categoria,tipo,cantidad:parseFloat(cantidad),tc:parseFloat(tc),montoEur:parseFloat(montoEur),montoUSD:parseFloat(montoUSD)});
     ok++;
   });
-  DB.movimientos.sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  if(DB.movimientos)DB.movimientos.sort((a,b)=>a.fecha.localeCompare(b.fecha));
   debouncedSave();
   showAlert('alert-mov',`${ok} movimientos importados${err?' · '+err+' errores':''}`,err&&!ok?'err':'ok');
   document.getElementById('mv-csv').value='';
@@ -1361,7 +1202,20 @@ function resetearDatos(){
 document.getElementById('mv-fecha').value=new Date().toISOString().slice(0,10);
 document.getElementById('deu-fecha').value=new Date().toISOString().slice(0,10);
 document.getElementById('ef-fecha').value=new Date().toISOString().slice(0,10);
-initLogin();
+
+// Conectar botón de PIN
+document.getElementById('pinBtn').addEventListener('click', tryLogin);
+document.getElementById('pinInput').addEventListener('keydown', function(e){
+  if(e.key==='Enter') tryLogin();
+});
+
+// Cargar datos y mostrar login
+(async()=>{
+  await loadFromSheet();
+  document.getElementById('loading').style.display='none';
+  document.getElementById('loginBox').style.display='flex';
+  document.getElementById('pinInput').focus();
+})();
 </script>
 </body>
 </html>
