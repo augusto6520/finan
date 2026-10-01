@@ -72,6 +72,18 @@ body{font-family:var(--font);background:var(--bg3);color:var(--text);font-size:1
 .tab{padding:6px 14px;font-size:13px;cursor:pointer;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-0.5px;white-space:nowrap}
 .tab.active{color:var(--text);font-weight:500;border-bottom-color:var(--text)}
 .fl{font-size:12px;color:var(--text2);margin-bottom:3px}
+.hint{font-size:11px;color:var(--text3);line-height:1.4;margin-top:2px}
+.formula{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin:2px 0 10px;font-size:12px;color:var(--text2)}
+.fx-title{font-weight:500;color:var(--text);margin-bottom:8px}
+.fx-sub{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.04em;margin:10px 0 6px;padding-top:8px;border-top:0.5px solid var(--border)}
+.fx-row{display:flex;gap:10px;align-items:flex-start;padding:3px 0;line-height:1.4}
+.fx-row b{color:var(--text);font-weight:500}
+.fx-why{display:block;color:var(--text3);font-size:11px}
+.fx-sign{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;background:var(--bg3);color:var(--text2)}
+.fx-plus{background:var(--success-bg);color:var(--success-text)}
+.fx-minus{background:var(--danger-bg);color:var(--danger-text)}
+.fx-ex{margin-top:10px;padding-top:8px;border-top:0.5px solid var(--border);line-height:1.5}
+.fx-ex b{color:var(--text);font-weight:500}
 .iuwu{display:flex;align-items:center;border:0.5px solid var(--border2);border-radius:var(--radius);overflow:hidden;background:var(--bg)}
 .iuwu input,.iuwu select{border:none;flex:1;padding:7px 10px;background:transparent;color:var(--text);font-size:13px;outline:none;min-width:0;font-family:var(--font)}
 .iuwu .unit{padding:7px 10px;background:var(--bg2);font-size:11px;color:var(--text2);border-left:0.5px solid var(--border);white-space:nowrap}
@@ -259,7 +271,7 @@ tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
     </div>
     <div class="fg2">
       <div class="frow"><label class="fl">TC EUR/USD</label><div class="iuwu"><input type="number" id="m-tc-eur" placeholder="1.16" step="0.001"><div class="unit">USD/€</div></div></div>
-      <div class="frow"><label class="fl">TC ARS/USD (si aplica)</label><div class="iuwu"><input type="number" id="m-tc-ars" placeholder="0" step="1"><div class="unit">ARS/$</div></div></div>
+      <div></div>
     </div>
     <div class="sec" style="margin-top:1rem">Ingresos</div>
     <div class="fg2">
@@ -268,12 +280,30 @@ tr.editable-row:hover td{background:var(--bg2);cursor:pointer}
     </div>
     <div class="sec" style="margin-top:1rem">Gastos del mes</div>
     <div class="fg2">
-      <div class="frow"><label class="fl">Total gastos en €</label><div class="iuwu"><input type="number" id="m-gasto-eur" placeholder="0"><div class="unit">€</div></div></div>
-      <div class="frow"><label class="fl">Total gastos en ARS</label><div class="iuwu"><input type="number" id="m-gasto-ars" placeholder="0"><div class="unit">ARS</div></div></div>
+      <div class="frow"><label class="fl">Total gastos del mes (€)</label><div class="iuwu"><input type="number" id="m-gasto-eur" placeholder="0"><div class="unit">€</div></div></div>
+      <div></div>
+    </div>
+    <div class="formula">
+      <div class="fx-title">Cómo calcular "Total gastos del mes" (todo en €, de tu cuenta)</div>
+      <div class="fx-row"><span class="fx-sign fx-plus">+</span><div><b>Saldo inicial</b><span class="fx-why">El saldo final del mes anterior.</span></div></div>
+      <div class="fx-row"><span class="fx-sign fx-plus">+</span><div><b>Sueldo del mes</b><span class="fx-why">Más otros ingresos si hubo (lo que cargaste arriba en Ingresos).</span></div></div>
+      <div class="fx-row"><span class="fx-sign fx-minus">−</span><div><b>Saldo final</b><span class="fx-why">El que cargás abajo (día anterior a que entre el nuevo sueldo).</span></div></div>
+      <div class="fx-sub">Después ajustá por movimientos que movieron tu saldo pero NO son gastos ni ingresos</div>
+      <div class="fx-row"><span class="fx-sign fx-minus">−</span><div><b>Compras de inversión</b> (BTC, ETFs)<span class="fx-why">Salió plata de la cuenta, pero no la gastaste: pasó a inversión.</span></div></div>
+      <div class="fx-row"><span class="fx-sign fx-minus">−</span><div><b>Retiros de efectivo</b><span class="fx-why">Salió de la cuenta, pero lo tenés en billetes.</span></div></div>
+      <div class="fx-row"><span class="fx-sign fx-minus">−</span><div><b>Préstamos dados</b><span class="fx-why">Salió de la cuenta, pero te lo deben.</span></div></div>
+      <div class="fx-row"><span class="fx-sign fx-plus">+</span><div><b>Ventas de inversión</b><span class="fx-why">Entró plata a la cuenta, pero no es ingreso: es una inversión vendida.</span></div></div>
+      <div class="fx-row"><span class="fx-sign fx-plus">+</span><div><b>Depósitos de efectivo</b><span class="fx-why">Entró a la cuenta, pero eran tus billetes.</span></div></div>
+      <div class="fx-row"><span class="fx-sign fx-plus">+</span><div><b>Cobros de deudas</b><span class="fx-why">Entró a la cuenta, pero ya era plata tuya.</span></div></div>
+      <div class="fx-sub">NO los toques (ya cuentan como gasto)</div>
+      <div class="fx-row"><span class="fx-sign">=</span><div><b>Lo que pasaste a pesos argentinos</b><span class="fx-why">Es plata que gastás en Argentina: es gasto.</span></div></div>
+      <div class="fx-row"><span class="fx-sign">=</span><div><b>Suscripciones y compras en euros</b><span class="fx-why">Son gasto real.</span></div></div>
+      <div class="fx-ex"><b>Mes sin inversiones ni movimientos:</b> Saldo inicial + Sueldo − Saldo final.<br><b>Ejemplo:</b> inicial 1000 + sueldo 2386 − final 1500 − compra BTC 500 = <b>1386</b> de gastos.</div>
     </div>
     <div class="sec" style="margin-top:1rem">Saldo Cuenta € al cierre</div>
     <div class="fg2">
-      <div class="frow"><label class="fl">Saldo cuenta € al cierre</label><div class="iuwu"><input type="number" id="m-saldo-eur" placeholder="0"><div class="unit">€</div></div></div>
+      <div class="frow"><label class="fl">Saldo cuenta € al cierre</label><div class="iuwu"><input type="number" id="m-saldo-eur" placeholder="0"><div class="unit">€</div></div>
+        <div class="hint">Saldo del día anterior a que entre el nuevo sueldo.</div></div>
       <div></div>
     </div>
     <div class="sec" style="margin-top:1rem">Comentario</div>
@@ -839,11 +869,9 @@ function editarMes(mes){
   document.getElementById('form-mes-titulo').textContent='Editar mes — '+mesLabel(mes);
   document.getElementById('m-mes').value=mes;
   document.getElementById('m-tc-eur').value=m.tcEur||'';
-  document.getElementById('m-tc-ars').value=m.tcArs||'';
   document.getElementById('m-ing-eur').value=m.ingEur||'';
   document.getElementById('m-ing-otros').value=m.ingOtros||'';
   document.getElementById('m-gasto-eur').value=m.gastoEur||'';
-  document.getElementById('m-gasto-ars').value=m.gastoArs||'';
   document.getElementById('m-saldo-eur').value=m.saldoEur||'';
   document.getElementById('m-comentario').value=m.comentario||'';
   document.getElementById('btn-borrar-mes').style.display='inline-block';
@@ -1023,11 +1051,12 @@ function guardarMes(){
   const mes=document.getElementById('m-mes').value;
   const tcEur=parseFloat(document.getElementById('m-tc-eur').value)||0;
   if(!mes||!tcEur){showAlert('alert-mes','Completá el mes y el TC EUR/USD','err');return;}
-  const obj={mes,tcEur,tcArs:parseFloat(document.getElementById('m-tc-ars').value)||0,
+  const prev=(DB.meses||[]).find(m=>m.mes===mes)||{};
+  const obj={mes,tcEur,tcArs:prev.tcArs||0,
     ingEur:parseFloat(document.getElementById('m-ing-eur').value)||0,
     ingOtros:parseFloat(document.getElementById('m-ing-otros').value)||0,
     gastoEur:parseFloat(document.getElementById('m-gasto-eur').value)||0,
-    gastoArs:parseFloat(document.getElementById('m-gasto-ars').value)||0,
+    gastoArs:prev.gastoArs||0,
     saldoEur:parseFloat(document.getElementById('m-saldo-eur').value)||0,
     comentario:document.getElementById('m-comentario').value.trim()};
   if(!DB.meses)DB.meses=[];
@@ -1040,7 +1069,7 @@ function limpiarFormMes(){
   editMes=null;
   document.getElementById('form-mes-titulo').textContent='Cargar mes';
   document.getElementById('btn-borrar-mes').style.display='none';
-  ['m-mes','m-tc-eur','m-tc-ars','m-ing-eur','m-ing-otros','m-gasto-eur','m-gasto-ars','m-saldo-eur','m-comentario'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['m-mes','m-tc-eur','m-ing-eur','m-ing-otros','m-gasto-eur','m-saldo-eur','m-comentario'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
 }
 function importarCSVMeses(){
   const raw=document.getElementById('m-csv').value.trim();
